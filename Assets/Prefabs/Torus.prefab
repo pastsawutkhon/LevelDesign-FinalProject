@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5824435479727430823}
   - component: {fileID: 6159155783730527984}
   - component: {fileID: 704084715739622442}
+  - component: {fileID: 1757193207331199287}
   m_Layer: 0
   m_Name: Torus
   m_TagString: Untagged
@@ -483,3 +484,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
   speed: 20
   lifeTime: 3
+--- !u!33 &1757193207331199287
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4656986914779861761}
+  m_Mesh: {fileID: 0}
