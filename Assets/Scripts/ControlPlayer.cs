@@ -2,24 +2,29 @@ using UnityEngine;
 
 public class ControlPlayer : MonoBehaviour
 {
-    // เพิ่มสถานะ None สำหรับตอนที่ยังไม่มีอาวุธอะไรเลย
-    public enum WeaponType { None, Rifle, Pistol, Knife }
-    public WeaponType currentWeapon = WeaponType.None; // เริ่มเกมมาให้มือเปล่า
+    // เพิ่ม Dynamite และ Key_1 เข้าไปในระบบ
+    public enum WeaponType { None, Rifle, Pistol, Knife, Dynamite, Key_1 }
+    public WeaponType currentWeapon = WeaponType.None; 
 
-    [Header("Weapon Unlocks (สถานะการครอบครองอาวุธ)")]
-    public bool hasRifle = false;  // ตอนเริ่มเกมยังไม่มีไรเฟิล
-    public bool hasPistol = false; // ตอนเริ่มเกมยังไม่มีปืนพก
-    public bool hasKnife = false;  // แก้เป็น false: ตอนเริ่มเกมก็ยังไม่มีมีดเช่นกัน
+    [Header("Weapon Unlocks (สถานะการครอบครองไอเทม)")]
+    public bool hasRifle = false;  
+    public bool hasPistol = false; 
+    public bool hasKnife = false;  
+    public bool hasDynamite = false; // ช่อง 4
+    public bool hasKey_1 = false;    // ช่อง 5 (ใช้แทนกุญแจเดิม)
 
-    [Header("Weapon Models (ใส่โมเดลปืนที่อยู่ใต้ Player)")]
+    [Header("Weapon Models (ใส่โมเดลที่อยู่ใต้ Player)")]
     public GameObject rifleModel;
     public GameObject pistolModel;
     public GameObject knifeModel;
+    public GameObject dynamiteModel; // โมเดลระเบิดในมือ
+    public GameObject key1Model;     // โมเดลกุญแจในมือ
 
-    [Header("Fire Points (จุดยิงตำแหน่งต่างๆ)")]
+    [Header("Fire Points (จุดยิง/จุดปา)")]
     public Transform firePoint1_Rifle;
     public Transform firePoint2_Pistol;
     public Transform firePoint3_Knife;
+    public Transform firePoint4_Dynamite; // จุดที่ระเบิดจะพุ่งออกไป
 
     [Header("Rifle (ปืนไรเฟิล - กด 1)")]
     public GameObject rifleBulletPrefab;
@@ -34,6 +39,10 @@ public class ControlPlayer : MonoBehaviour
     public float knifeCooldown = 0.8f;
     public Animator knifeAnimator;
 
+    [Header("Dynamite (ระเบิด - กด 4)")]
+    public GameObject dynamitePrefab; // Prefab ของลูกระเบิดที่จะปาออกไป
+    public float dynamiteCooldown = 1.0f;
+
     [Header("General Settings")]
     public float speed = 5f;
 
@@ -43,8 +52,6 @@ public class ControlPlayer : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
-        // เซ็ตอาวุธเริ่มต้นตอนรันเกมให้เป็น "None" (มือเปล่า)
         EquipWeapon(WeaponType.None); 
     }
 
@@ -74,7 +81,6 @@ public class ControlPlayer : MonoBehaviour
         {
             Vector3 target = hit.point;
             target.y = transform.position.y;
-
             Vector3 direction = target - transform.position;
 
             if (direction != Vector3.zero)
@@ -87,10 +93,11 @@ public class ControlPlayer : MonoBehaviour
 
     void HandleWeaponSwitch()
     {
-        // เช็คก่อนว่า "มีปืนนั้นหรือเปล่า" ถึงจะยอมให้เปลี่ยน
         if (Input.GetKeyDown(KeyCode.Alpha1) && hasRifle) EquipWeapon(WeaponType.Rifle);
         if (Input.GetKeyDown(KeyCode.Alpha2) && hasPistol) EquipWeapon(WeaponType.Pistol);
         if (Input.GetKeyDown(KeyCode.Alpha3) && hasKnife) EquipWeapon(WeaponType.Knife);
+        if (Input.GetKeyDown(KeyCode.Alpha4) && hasDynamite) EquipWeapon(WeaponType.Dynamite);
+        if (Input.GetKeyDown(KeyCode.Alpha5) && hasKey_1) EquipWeapon(WeaponType.Key_1);
     }
 
     void EquipWeapon(WeaponType newWeapon)
@@ -101,41 +108,37 @@ public class ControlPlayer : MonoBehaviour
         if (rifleModel != null) rifleModel.SetActive(false);
         if (pistolModel != null) pistolModel.SetActive(false);
         if (knifeModel != null) knifeModel.SetActive(false);
+        if (dynamiteModel != null) dynamiteModel.SetActive(false);
+        if (key1Model != null) key1Model.SetActive(false);
 
-        // เปิดโมเดลตามอาวุธที่ถือ (ถ้าเป็น None ก็จะปิดหมดเลย)
+        // เปิดเฉพาะอันที่ถือ
         switch (currentWeapon)
         {
-            case WeaponType.Rifle:
-                if (rifleModel != null) rifleModel.SetActive(true);
-                break;
-            case WeaponType.Pistol:
-                if (pistolModel != null) pistolModel.SetActive(true);
-                break;
-            case WeaponType.Knife:
-                if (knifeModel != null) knifeModel.SetActive(true);
-                break;
-            case WeaponType.None:
-                // มือเปล่า ไม่ต้องทำอะไร (โมเดลถูกปิดไปแล้วด้านบน)
-                break;
+            case WeaponType.Rifle: if (rifleModel != null) rifleModel.SetActive(true); break;
+            case WeaponType.Pistol: if (pistolModel != null) pistolModel.SetActive(true); break;
+            case WeaponType.Knife: if (knifeModel != null) knifeModel.SetActive(true); break;
+            case WeaponType.Dynamite: if (dynamiteModel != null) dynamiteModel.SetActive(true); break;
+            case WeaponType.Key_1: if (key1Model != null) key1Model.SetActive(true); break;
+            case WeaponType.None: break;
         }
     }
 
-    // ฟังก์ชันนี้จะถูกเรียกจากไอเทมบนพื้น (FloatingItem) ตอนที่เราเก็บของได้
     public void UnlockWeapon(WeaponType weaponToUnlock)
     {
         if (weaponToUnlock == WeaponType.Rifle) hasRifle = true;
         if (weaponToUnlock == WeaponType.Pistol) hasPistol = true;
-        if (weaponToUnlock == WeaponType.Knife) hasKnife = true; // เพิ่มการปลดล็อคมีด
+        if (weaponToUnlock == WeaponType.Knife) hasKnife = true;
+        if (weaponToUnlock == WeaponType.Dynamite) hasDynamite = true;
+        if (weaponToUnlock == WeaponType.Key_1) hasKey_1 = true;
         
-        // พอเก็บอาวุธปุ๊บ สั่งให้ถืออาวุธชิ้นนั้นทันที
         EquipWeapon(weaponToUnlock);
-        Debug.Log("ปลดล็อคอาวุธ: " + weaponToUnlock);
+        Debug.Log("ปลดล็อค/เก็บไอเทม: " + weaponToUnlock);
     }
 
     void HandleShooting()
     {
-        // ถ้ามือเปล่าอยู่ ไม่ให้กดยิง
-        if (currentWeapon == WeaponType.None) return;
+        // มือเปล่า หรือ ถือกุญแจอยู่ จะกดโจมตีไม่ได้
+        if (currentWeapon == WeaponType.None || currentWeapon == WeaponType.Key_1) return;
 
         bool isTryingToShoot = false;
 
@@ -143,7 +146,7 @@ public class ControlPlayer : MonoBehaviour
         {
             isTryingToShoot = Input.GetMouseButton(0); 
         }
-        else
+        else // ปืนพก, มีด, ไดนาไมต์ ใช้การคลิกทีละครั้ง
         {
             isTryingToShoot = Input.GetMouseButtonDown(0); 
         }
@@ -169,11 +172,18 @@ public class ControlPlayer : MonoBehaviour
                 break;
 
             case WeaponType.Knife:
-                if (knifeAnimator != null)
-                {
-                    knifeAnimator.SetTrigger("Attack"); 
-                }
+                if (knifeAnimator != null) knifeAnimator.SetTrigger("Attack"); 
                 nextFireTime = Time.time + knifeCooldown;
+                break;
+
+            case WeaponType.Dynamite:
+                // ปาระเบิดออกไป (ใช้สคริปต์ Bullet.cs แปะที่ Prefab ระเบิดได้เลย)
+                Shoot(dynamitePrefab, firePoint4_Dynamite);
+                nextFireTime = Time.time + dynamiteCooldown;
+                
+                // ถ้ายากให้ปาได้ลูกเดียวแล้วระเบิดหายไปจากมือเลย ให้เปิดคอมเมนต์ 2 บรรทัดด้านล่างนี้:
+                // hasDynamite = false; 
+                // EquipWeapon(WeaponType.None);
                 break;
         }
     }
@@ -197,14 +207,10 @@ public class ControlPlayer : MonoBehaviour
     void MeleeAttack(Transform attackPoint)
     {
         if (attackPoint == null) return;
-
         Collider[] hitEnemies = Physics.OverlapSphere(attackPoint.position, knifeRange);
         foreach (Collider enemy in hitEnemies)
         {
-            if (enemy.gameObject.CompareTag("Enemy"))
-            {
-                Destroy(enemy.gameObject);
-            }
+            if (enemy.gameObject.CompareTag("Enemy")) Destroy(enemy.gameObject);
         }
     }
 
