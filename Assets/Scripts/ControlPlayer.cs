@@ -98,6 +98,7 @@ public class ControlPlayer : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha3) && hasKnife) EquipWeapon(WeaponType.Knife);
         if (Input.GetKeyDown(KeyCode.Alpha4) && hasDynamite) EquipWeapon(WeaponType.Dynamite);
         if (Input.GetKeyDown(KeyCode.Alpha5) && hasKey_1) EquipWeapon(WeaponType.Key_1);
+        if (Input.GetKeyDown(KeyCode.Alpha0)) EquipWeapon(WeaponType.None);
     }
 
     void EquipWeapon(WeaponType newWeapon)
