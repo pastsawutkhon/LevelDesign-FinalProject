@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class ControlPlayer : MonoBehaviour
 {
-    // เพิ่ม Key_2 เข้าไปในระบบ
     public enum WeaponType { None, Rifle, Pistol, Knife, Dynamite, Key_1, Key_2 }
     public WeaponType currentWeapon = WeaponType.None; 
 
@@ -11,8 +10,8 @@ public class ControlPlayer : MonoBehaviour
     public bool hasPistol = false; 
     public bool hasKnife = false;  
     public bool hasDynamite = false; 
-    public bool hasKey_1 = false;    // ช่อง 5
-    public bool hasKey_2 = false;    // ช่อง 6 (กุญแจดอกที่ 2)
+    public bool hasKey_1 = false;    
+    public bool hasKey_2 = false;    
 
     [Header("Weapon Models (ใส่โมเดลที่อยู่ใต้ Player)")]
     public GameObject rifleModel;
@@ -20,7 +19,7 @@ public class ControlPlayer : MonoBehaviour
     public GameObject knifeModel;
     public GameObject dynamiteModel; 
     public GameObject key1Model;     
-    public GameObject key2Model;     // โมเดลกุญแจดอกที่ 2 ในมือ
+    public GameObject key2Model;     
 
     [Header("Fire Points (จุดยิง/จุดปา)")]
     public Transform firePoint1_Rifle;
@@ -39,6 +38,8 @@ public class ControlPlayer : MonoBehaviour
     [Header("Knife (มีด - กด 3)")]
     public float knifeRange = 1.5f;
     public float knifeCooldown = 0.8f;
+    public float knifeDamage = 3f; // ปรับดาเมจของมีดได้ใน Inspector
+    public GameObject knifeHitFXPrefab; // ลากเอฟเฟกต์ตอนฟันโดนมาใส่ (เช่น รอยฟัน, เลือด)
     public Animator knifeAnimator;
 
     [Header("Dynamite (ระเบิด - กด 4)")]
@@ -100,15 +101,14 @@ public class ControlPlayer : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha3) && hasKnife) EquipWeapon(WeaponType.Knife);
         if (Input.GetKeyDown(KeyCode.Alpha4) && hasDynamite) EquipWeapon(WeaponType.Dynamite);
         if (Input.GetKeyDown(KeyCode.Alpha5) && hasKey_1) EquipWeapon(WeaponType.Key_1);
-        if (Input.GetKeyDown(KeyCode.Alpha6) && hasKey_2) EquipWeapon(WeaponType.Key_2); // กด 6 เพื่อถือ Key_2
-        if (Input.GetKeyDown(KeyCode.Alpha0)) EquipWeapon(WeaponType.None); // กด 0 มือเปล่า
+        if (Input.GetKeyDown(KeyCode.Alpha6) && hasKey_2) EquipWeapon(WeaponType.Key_2); 
+        if (Input.GetKeyDown(KeyCode.Alpha0)) EquipWeapon(WeaponType.None); 
     }
 
     void EquipWeapon(WeaponType newWeapon)
     {
         currentWeapon = newWeapon;
 
-        // ปิดโมเดลทั้งหมดก่อน
         if (rifleModel != null) rifleModel.SetActive(false);
         if (pistolModel != null) pistolModel.SetActive(false);
         if (knifeModel != null) knifeModel.SetActive(false);
@@ -116,7 +116,6 @@ public class ControlPlayer : MonoBehaviour
         if (key1Model != null) key1Model.SetActive(false);
         if (key2Model != null) key2Model.SetActive(false);
 
-        // เปิดเฉพาะอันที่ถือ
         switch (currentWeapon)
         {
             case WeaponType.Rifle: if (rifleModel != null) rifleModel.SetActive(true); break;
@@ -136,15 +135,13 @@ public class ControlPlayer : MonoBehaviour
         if (weaponToUnlock == WeaponType.Knife) hasKnife = true;
         if (weaponToUnlock == WeaponType.Dynamite) hasDynamite = true;
         if (weaponToUnlock == WeaponType.Key_1) hasKey_1 = true;
-        if (weaponToUnlock == WeaponType.Key_2) hasKey_2 = true; // รองรับการเก็บ Key_2
+        if (weaponToUnlock == WeaponType.Key_2) hasKey_2 = true; 
         
         EquipWeapon(weaponToUnlock);
-        Debug.Log("ปลดล็อค/เก็บไอเทม: " + weaponToUnlock);
     }
 
     void HandleShooting()
     {
-        // มือเปล่า หรือ ถือกุญแจอยู่ ใช้อาวุธโจมตีไม่ได้
         if (currentWeapon == WeaponType.None || currentWeapon == WeaponType.Key_1 || currentWeapon == WeaponType.Key_2) return;
 
         bool isTryingToShoot = false;
@@ -207,9 +204,26 @@ public class ControlPlayer : MonoBehaviour
     {
         if (attackPoint == null) return;
         Collider[] hitEnemies = Physics.OverlapSphere(attackPoint.position, knifeRange);
-        foreach (Collider enemy in hitEnemies)
+        
+        foreach (Collider enemyCollider in hitEnemies)
         {
-            if (enemy.gameObject.CompareTag("Enemy")) Destroy(enemy.gameObject);
+            if (enemyCollider.gameObject.CompareTag("Enemy")) 
+            {
+                // 1. ทำดาเมจ
+                Enemy enemyScript = enemyCollider.gameObject.GetComponent<Enemy>();
+                if (enemyScript != null)
+                {
+                    enemyScript.TakeDamage(knifeDamage);
+                }
+
+                // 2. เล่นเอฟเฟกต์ฟันโดน
+                if (knifeHitFXPrefab != null)
+                {
+                    // ให้ FX เกิดสูงขึ้นมาจากพื้นนิดนึง (จะได้อยู่กลางตัวศัตรู)
+                    Vector3 fxPosition = enemyCollider.transform.position + new Vector3(0, 1f, 0);
+                    Instantiate(knifeHitFXPrefab, fxPosition, Quaternion.identity);
+                }
+            }
         }
     }
 

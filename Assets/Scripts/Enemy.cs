@@ -3,12 +3,15 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     [Header("สถานะศัตรู")]
-    public float maxHealth = 3f; // เลือดสูงสุด (ลูกกระจ๊อกอาจจะ 3, บอสอาจจะ 50)
+    public float maxHealth = 3f; // เลือดสูงสุด
     private float currentHealth;
 
     [Header("เอฟเฟกต์และของดรอป")]
-    public GameObject deathFXPrefab;   // ลาก Prefab เอฟเฟกต์ระเบิด/เลือด มาใส่
-    public GameObject itemDropPrefab;  // ลาก Prefab ไอเทม (FloatingItem) มาใส่ ถ้าว่างไว้ก็ไม่ดรอป
+    public GameObject deathFXPrefab;   // เอฟเฟกต์ตอนตาย
+    public GameObject itemDropPrefab;  // ไอเทมที่จะดรอป
+    
+    [Tooltip("จุดที่จะให้ไอเทมดรอป (ถ้าปล่อยว่าง จะดรอปที่ตัวศัตรู)")]
+    public Transform dropPoint;        // ลาก GameObject เปล่าๆ มาใส่เพื่อกำหนดจุดดรอป
 
     void Start()
     {
@@ -16,7 +19,6 @@ public class Enemy : MonoBehaviour
         currentHealth = maxHealth;
     }
 
-    // ฟังก์ชันนี้จะถูกเรียกจากกระสุน หรือ มีดของผู้เล่น
     public void TakeDamage(float damageAmount)
     {
         currentHealth -= damageAmount;
@@ -31,18 +33,31 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        // 1. เล่นเอฟเฟกต์ตาย (ถ้ามี)
+        // 1. เล่นเอฟเฟกต์ตาย
         if (deathFXPrefab != null)
         {
-            Instantiate(deathFXPrefab, transform.position, Quaternion.identity);
+            // ให้เอฟเฟกต์เกิดตรงจุดกึ่งกลางของตัวศัตรู (ปรับให้สูงขึ้นมานิดนึง)
+            Vector3 fxPos = transform.position + new Vector3(0, 1f, 0);
+            Instantiate(deathFXPrefab, fxPos, Quaternion.identity);
         }
 
-        // 2. ดรอปไอเทม (ถ้ามี)
+        // 2. ดรอปไอเทม
         if (itemDropPrefab != null)
         {
-            // ให้ของดรอปลอยสูงจากพื้นนิดนึง จะได้ไม่จมดิน
-            Vector3 dropPosition = transform.position + new Vector3(0, 0.5f, 0);
-            Instantiate(itemDropPrefab, dropPosition, Quaternion.identity);
+            // ตรวจสอบว่ามีการใส่ Drop Point ไว้หรือไม่
+            Vector3 spawnPosition;
+            if (dropPoint != null)
+            {
+                // ถ้าใส่ไว้ ให้ใช้ตำแหน่งของ Drop Point นั้นเลย
+                spawnPosition = dropPoint.position;
+            }
+            else
+            {
+                // ถ้าไม่ได้ใส่ ให้ใช้ตำแหน่งตัวศัตรู แล้วยกสูงขึ้น 0.5 หน่วยกันจมดิน
+                spawnPosition = transform.position + new Vector3(0, 0.5f, 0);
+            }
+
+            Instantiate(itemDropPrefab, spawnPosition, Quaternion.identity);
         }
 
         // 3. ทำลายโมเดลศัตรูทิ้ง
