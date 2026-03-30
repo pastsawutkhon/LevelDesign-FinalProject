@@ -5,6 +5,10 @@ public class DoorLock : MonoBehaviour
     [Header("การตั้งค่าแม่กุญแจ")]
     public KeyCode interactKey = KeyCode.E;
     
+    [Header("กุญแจที่ต้องใช้ (เลือกได้ว่าจะให้รับดอกไหน)")]
+    // ตัวแปรนี้จะไปโผล่ใน Inspector ให้คุณเลือกประเภทกุญแจได้เลย!
+    public ControlPlayer.WeaponType requiredKey = ControlPlayer.WeaponType.Key_1; 
+    
     [Header("เอฟเฟกต์ตอนปลดล็อค")]
     public GameObject unlockFXPrefab; 
     public Transform fxSpawnPoint;    
@@ -26,8 +30,13 @@ public class DoorLock : MonoBehaviour
         {
             if (playerScript != null)
             {
-                // เช็คว่ามีกุญแจ และถืออยู่บนมือ
-                if (playerScript.hasKey_1 && playerScript.currentWeapon == ControlPlayer.WeaponType.Key_1)
+                // ตรวจสอบว่าผู้เล่น "มีกุญแจตรงตามที่กำหนดไหม"
+                bool hasTheRightKey = false;
+                if (requiredKey == ControlPlayer.WeaponType.Key_1 && playerScript.hasKey_1) hasTheRightKey = true;
+                if (requiredKey == ControlPlayer.WeaponType.Key_2 && playerScript.hasKey_2) hasTheRightKey = true;
+
+                // เช็คว่า มีกุญแจที่ถูกดอก และ กำลังถือมันอยู่บนมือ
+                if (hasTheRightKey && playerScript.currentWeapon == requiredKey)
                 {
                     Debug.Log("ไขกุญแจสำเร็จ! ทำลายแม่กุญแจและกุญแจในมือ");
 
@@ -37,22 +46,25 @@ public class DoorLock : MonoBehaviour
                         Instantiate(unlockFXPrefab, fxSpawnPoint.position, fxSpawnPoint.rotation);
                     }
 
-                    // 2. หักกุญแจทิ้งออกจากตัวผู้เล่น
-                    playerScript.hasKey_1 = false; // ปรับสถานะเป็นไม่มีกุญแจ
+                    // 2. หักกุญแจออกจากตัวผู้เล่นตามประเภทที่ถูกใช้
+                    if (requiredKey == ControlPlayer.WeaponType.Key_1) playerScript.hasKey_1 = false;
+                    if (requiredKey == ControlPlayer.WeaponType.Key_2) playerScript.hasKey_2 = false;
                     
-                    // 3. สั่งให้กลับไปอยู่สถานะ "มือเปล่า" (โมเดลกุญแจในมือจะถูกซ่อนทันที)
+                    // 3. สั่งให้กลับไปอยู่สถานะ "มือเปล่า"
                     playerScript.UnlockWeapon(ControlPlayer.WeaponType.None);
 
                     // 4. ทำลายแม่กุญแจที่ขวางประตูอยู่ทิ้ง
                     Destroy(gameObject); 
                 }
-                else if (playerScript.hasKey_1 && playerScript.currentWeapon != ControlPlayer.WeaponType.Key_1)
+                // ถ้ามีกุญแจดอกนี้แล้ว แต่ยังไม่ได้กดหยิบขึ้นมาถือ
+                else if (hasTheRightKey && playerScript.currentWeapon != requiredKey)
                 {
-                    Debug.Log("คุณมีกุญแจนะ แต่ต้องหยิบขึ้นมาถือ (กด 5) ก่อนถึงจะไขได้!");
+                    Debug.Log("คุณมีกุญแจแล้ว แต่ต้องหยิบขึ้นมาถือให้ถูกดอกก่อนถึงจะไขได้!");
                 }
+                // ถ้าไม่มีกุญแจดอกที่ประตูกำหนดเลย
                 else
                 {
-                    Debug.Log("ประตูถูกล็อค! คุณต้องไปหา Key_1 มาก่อน");
+                    Debug.Log("ประตูถูกล็อค! คุณต้องไปหา " + requiredKey.ToString() + " มาก่อน");
                 }
             }
         }
@@ -64,7 +76,7 @@ public class DoorLock : MonoBehaviour
         {
             isPlayerInRange = true;
             playerScript = other.GetComponent<ControlPlayer>(); 
-            Debug.Log("กด E เพื่อใช้กุญแจไขล็อค");
+            Debug.Log("กด E เพื่อตรวจสอบที่ล็อค");
         }
     }
 

@@ -2,29 +2,31 @@ using UnityEngine;
 
 public class ControlPlayer : MonoBehaviour
 {
-    // เพิ่ม Dynamite และ Key_1 เข้าไปในระบบ
-    public enum WeaponType { None, Rifle, Pistol, Knife, Dynamite, Key_1 }
+    // เพิ่ม Key_2 เข้าไปในระบบ
+    public enum WeaponType { None, Rifle, Pistol, Knife, Dynamite, Key_1, Key_2 }
     public WeaponType currentWeapon = WeaponType.None; 
 
     [Header("Weapon Unlocks (สถานะการครอบครองไอเทม)")]
     public bool hasRifle = false;  
     public bool hasPistol = false; 
     public bool hasKnife = false;  
-    public bool hasDynamite = false; // ช่อง 4
-    public bool hasKey_1 = false;    // ช่อง 5 (ใช้แทนกุญแจเดิม)
+    public bool hasDynamite = false; 
+    public bool hasKey_1 = false;    // ช่อง 5
+    public bool hasKey_2 = false;    // ช่อง 6 (กุญแจดอกที่ 2)
 
     [Header("Weapon Models (ใส่โมเดลที่อยู่ใต้ Player)")]
     public GameObject rifleModel;
     public GameObject pistolModel;
     public GameObject knifeModel;
-    public GameObject dynamiteModel; // โมเดลระเบิดในมือ
-    public GameObject key1Model;     // โมเดลกุญแจในมือ
+    public GameObject dynamiteModel; 
+    public GameObject key1Model;     
+    public GameObject key2Model;     // โมเดลกุญแจดอกที่ 2 ในมือ
 
     [Header("Fire Points (จุดยิง/จุดปา)")]
     public Transform firePoint1_Rifle;
     public Transform firePoint2_Pistol;
     public Transform firePoint3_Knife;
-    public Transform firePoint4_Dynamite; // จุดที่ระเบิดจะพุ่งออกไป
+    public Transform firePoint4_Dynamite; 
 
     [Header("Rifle (ปืนไรเฟิล - กด 1)")]
     public GameObject rifleBulletPrefab;
@@ -40,7 +42,7 @@ public class ControlPlayer : MonoBehaviour
     public Animator knifeAnimator;
 
     [Header("Dynamite (ระเบิด - กด 4)")]
-    public GameObject dynamitePrefab; // Prefab ของลูกระเบิดที่จะปาออกไป
+    public GameObject dynamitePrefab; 
     public float dynamiteCooldown = 1.0f;
 
     [Header("General Settings")]
@@ -98,7 +100,8 @@ public class ControlPlayer : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha3) && hasKnife) EquipWeapon(WeaponType.Knife);
         if (Input.GetKeyDown(KeyCode.Alpha4) && hasDynamite) EquipWeapon(WeaponType.Dynamite);
         if (Input.GetKeyDown(KeyCode.Alpha5) && hasKey_1) EquipWeapon(WeaponType.Key_1);
-        if (Input.GetKeyDown(KeyCode.Alpha0)) EquipWeapon(WeaponType.None);
+        if (Input.GetKeyDown(KeyCode.Alpha6) && hasKey_2) EquipWeapon(WeaponType.Key_2); // กด 6 เพื่อถือ Key_2
+        if (Input.GetKeyDown(KeyCode.Alpha0)) EquipWeapon(WeaponType.None); // กด 0 มือเปล่า
     }
 
     void EquipWeapon(WeaponType newWeapon)
@@ -111,6 +114,7 @@ public class ControlPlayer : MonoBehaviour
         if (knifeModel != null) knifeModel.SetActive(false);
         if (dynamiteModel != null) dynamiteModel.SetActive(false);
         if (key1Model != null) key1Model.SetActive(false);
+        if (key2Model != null) key2Model.SetActive(false);
 
         // เปิดเฉพาะอันที่ถือ
         switch (currentWeapon)
@@ -120,6 +124,7 @@ public class ControlPlayer : MonoBehaviour
             case WeaponType.Knife: if (knifeModel != null) knifeModel.SetActive(true); break;
             case WeaponType.Dynamite: if (dynamiteModel != null) dynamiteModel.SetActive(true); break;
             case WeaponType.Key_1: if (key1Model != null) key1Model.SetActive(true); break;
+            case WeaponType.Key_2: if (key2Model != null) key2Model.SetActive(true); break;
             case WeaponType.None: break;
         }
     }
@@ -131,6 +136,7 @@ public class ControlPlayer : MonoBehaviour
         if (weaponToUnlock == WeaponType.Knife) hasKnife = true;
         if (weaponToUnlock == WeaponType.Dynamite) hasDynamite = true;
         if (weaponToUnlock == WeaponType.Key_1) hasKey_1 = true;
+        if (weaponToUnlock == WeaponType.Key_2) hasKey_2 = true; // รองรับการเก็บ Key_2
         
         EquipWeapon(weaponToUnlock);
         Debug.Log("ปลดล็อค/เก็บไอเทม: " + weaponToUnlock);
@@ -138,8 +144,8 @@ public class ControlPlayer : MonoBehaviour
 
     void HandleShooting()
     {
-        // มือเปล่า หรือ ถือกุญแจอยู่ จะกดโจมตีไม่ได้
-        if (currentWeapon == WeaponType.None || currentWeapon == WeaponType.Key_1) return;
+        // มือเปล่า หรือ ถือกุญแจอยู่ ใช้อาวุธโจมตีไม่ได้
+        if (currentWeapon == WeaponType.None || currentWeapon == WeaponType.Key_1 || currentWeapon == WeaponType.Key_2) return;
 
         bool isTryingToShoot = false;
 
@@ -147,7 +153,7 @@ public class ControlPlayer : MonoBehaviour
         {
             isTryingToShoot = Input.GetMouseButton(0); 
         }
-        else // ปืนพก, มีด, ไดนาไมต์ ใช้การคลิกทีละครั้ง
+        else 
         {
             isTryingToShoot = Input.GetMouseButtonDown(0); 
         }
@@ -166,25 +172,17 @@ public class ControlPlayer : MonoBehaviour
                 Shoot(rifleBulletPrefab, firePoint1_Rifle);
                 nextFireTime = Time.time + rifleCooldown;
                 break;
-
             case WeaponType.Pistol:
                 Shoot(pistolBulletPrefab, firePoint2_Pistol);
                 nextFireTime = Time.time + pistolCooldown;
                 break;
-
             case WeaponType.Knife:
                 if (knifeAnimator != null) knifeAnimator.SetTrigger("Attack"); 
                 nextFireTime = Time.time + knifeCooldown;
                 break;
-
             case WeaponType.Dynamite:
-                // ปาระเบิดออกไป (ใช้สคริปต์ Bullet.cs แปะที่ Prefab ระเบิดได้เลย)
                 Shoot(dynamitePrefab, firePoint4_Dynamite);
                 nextFireTime = Time.time + dynamiteCooldown;
-                
-                // ถ้ายากให้ปาได้ลูกเดียวแล้วระเบิดหายไปจากมือเลย ให้เปิดคอมเมนต์ 2 บรรทัดด้านล่างนี้:
-                // hasDynamite = false; 
-                // EquipWeapon(WeaponType.None);
                 break;
         }
     }
