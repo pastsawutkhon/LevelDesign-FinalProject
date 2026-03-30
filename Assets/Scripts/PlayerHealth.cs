@@ -119,6 +119,11 @@ public class PlayerHealth : MonoBehaviour
         // 6. หมดดีเลย์ เปิดให้กลับมาบังคับได้ปกติ
         if (controlPlayer != null) controlPlayer.enabled = true;
         isRespawning = false;
+        GameObject respawnFX = GameObject.FindWithTag("FxRespawn");
+        if (respawnFX != null)
+        {
+            Destroy(respawnFX); // หยุดเอฟเฟกต์ตอนเกิด (ถ้าเป็นแบบมีเสียงด้วยจะได้ไม่ดังต่อเนื่อง)
+        }
     }
 
     // กระบวนการกระพริบโมเดล
