@@ -13,7 +13,7 @@ public class ControlPlayer : MonoBehaviour
     public bool hasKey_1 = false;    
     public bool hasKey_2 = false;    
 
-    [Header("Weapon Models (ใส่โมเดลที่อยู่ใต้ Player)")]
+    [Header("Weapon Models (โมเดลอาวุธ)")]
     public GameObject rifleModel;
     public GameObject pistolModel;
     public GameObject knifeModel;
@@ -21,36 +21,37 @@ public class ControlPlayer : MonoBehaviour
     public GameObject key1Model;     
     public GameObject key2Model;     
 
-    [Header("Fire Points (จุดยิง/จุดปา)")]
+    [Header("Fire Points (จุดยิง/จุดปา/จุดฟัน)")]
     public Transform firePoint1_Rifle;
     public Transform firePoint2_Pistol;
     public Transform firePoint3_Knife;
     public Transform firePoint4_Dynamite; 
 
-    [Header("Rifle (ปืนไรเฟิล - กด 1)")]
+    [Header("อาวุธ: Rifle (กด 1)")]
     public GameObject rifleBulletPrefab;
     public float rifleCooldown = 0.2f;
 
-    [Header("Pistol (ปืนพก - กด 2)")]
+    [Header("อาวุธ: Pistol (กด 2)")]
     public GameObject pistolBulletPrefab;
     public float pistolCooldown = 0.5f;
 
-    [Header("Knife (มีด - กด 3)")]
+    [Header("อาวุธ: Knife (กด 3)")]
     public float knifeRange = 1.5f;
     public float knifeCooldown = 0.8f;
-    public float knifeDamage = 3f; // ปรับดาเมจของมีดได้ใน Inspector
-    public GameObject knifeHitFXPrefab; // ลากเอฟเฟกต์ตอนฟันโดนมาใส่ (เช่น รอยฟัน, เลือด)
+    public float knifeDamage = 3f; 
+    public GameObject knifeHitFXPrefab; 
     public Animator knifeAnimator;
 
-    [Header("Dynamite (ระเบิด - กด 4)")]
+    [Header("อาวุธ: Dynamite (กด 4)")]
     public GameObject dynamitePrefab; 
     public float dynamiteCooldown = 1.0f;
 
-    [Header("General Settings")]
+    [Header("การเคลื่อนที่")]
     public float speed = 5f;
 
     private Rigidbody rb;
     private float nextFireTime = 0f;
+    private Vector3 movementInput; // ตัวแปรเก็บค่าปุ่มกดก่อนส่งให้ฟิสิกส์
 
     void Start()
     {
@@ -60,19 +61,36 @@ public class ControlPlayer : MonoBehaviour
 
     void Update()
     {
-        Move();
-        RotateToMouse();
+        // 1. รับค่าปุ่มกดและการคลิกเมาส์ใน Update เสมอ (ป้องกันการพลาดจังหวะกด)
+        GetInput();
         HandleWeaponSwitch();
         HandleShooting();
     }
 
-    void Move()
+    void FixedUpdate()
     {
+        // 2. สั่งให้ฟิสิกส์ทำงานใน FixedUpdate (เพื่อความสมูธและไม่กระตุก)
+        MovePlayer();
+        RotateToMouse();
+    }
+
+    // 1. แก้ฟังก์ชันรับค่าปุ่มกด
+    void GetInput()
+    {
+        // เติมคำว่า Raw กลับเข้าไปครับ 
+        // พอกดปุ่มปุ๊บความเร็วมา 100% พอปล่อยปุ่มปุ๊บความเร็วเหลือ 0 ทันที 
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
+        
+        movementInput = new Vector3(moveX, 0, moveZ).normalized * speed;
+    }
 
-        Vector3 movement = new Vector3(moveX, 0, moveZ).normalized * speed;
-        rb.linearVelocity = movement;
+    // 2. แก้ฟังก์ชันสั่งเดิน
+    void MovePlayer()
+    {
+        // เปลี่ยนมาใช้การกำหนดความเร็ว (Velocity) ตรงๆ แทนการสั่ง MovePosition
+        // วิธีนี้จะปล่อยให้ฟิสิกส์จัดการความลื่นไหลให้เอง ไม่เกิดอาการวาปยิบๆ
+        rb.linearVelocity = new Vector3(movementInput.x, rb.linearVelocity.y, movementInput.z);
     }
 
     void RotateToMouse()
@@ -83,17 +101,19 @@ public class ControlPlayer : MonoBehaviour
         if (Physics.Raycast(ray, out hit))
         {
             Vector3 target = hit.point;
-            target.y = transform.position.y;
-            Vector3 direction = target - transform.position;
+            target.y = rb.position.y; // ให้อยู่ระดับเดียวกับตัวละคร
+            Vector3 direction = target - rb.position;
 
             if (direction != Vector3.zero)
             {
                 Quaternion lookRotation = Quaternion.LookRotation(direction);
-                transform.rotation = lookRotation;
+                // ใช้ MoveRotation ให้สอดคล้องกับ MovePosition
+                rb.MoveRotation(lookRotation); 
             }
         }
     }
 
+    // --- ระบบสลับอาวุธ ---
     void HandleWeaponSwitch()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1) && hasRifle) EquipWeapon(WeaponType.Rifle);
@@ -140,6 +160,7 @@ public class ControlPlayer : MonoBehaviour
         EquipWeapon(weaponToUnlock);
     }
 
+    // --- ระบบโจมตี ---
     void HandleShooting()
     {
         if (currentWeapon == WeaponType.None || currentWeapon == WeaponType.Key_1 || currentWeapon == WeaponType.Key_2) return;
@@ -148,11 +169,11 @@ public class ControlPlayer : MonoBehaviour
 
         if (currentWeapon == WeaponType.Rifle)
         {
-            isTryingToShoot = Input.GetMouseButton(0); 
+            isTryingToShoot = Input.GetMouseButton(0); // ปืนกลกดยิงค้างได้
         }
         else 
         {
-            isTryingToShoot = Input.GetMouseButtonDown(0); 
+            isTryingToShoot = Input.GetMouseButtonDown(0); // อาวุธอื่นต้องคลิกทีละนัด
         }
 
         if (isTryingToShoot && Time.time >= nextFireTime)
@@ -192,6 +213,7 @@ public class ControlPlayer : MonoBehaviour
         }
     }
 
+    // ฟังก์ชันนี้จะถูกเรียกจาก Animation Event ของมีด
     public void ExecuteKnifeDamage()
     {
         if (currentWeapon == WeaponType.Knife)
@@ -205,23 +227,16 @@ public class ControlPlayer : MonoBehaviour
         if (attackPoint == null) return;
         Collider[] hitEnemies = Physics.OverlapSphere(attackPoint.position, knifeRange);
         
-        foreach (Collider enemyCollider in hitEnemies)
+        foreach (Collider hit in hitEnemies)
         {
-            if (enemyCollider.gameObject.CompareTag("Enemy")) 
+            if (hit.CompareTag("Enemy")) 
             {
-                // 1. ทำดาเมจ
-                Enemy enemyScript = enemyCollider.gameObject.GetComponent<Enemy>();
-                if (enemyScript != null)
-                {
-                    enemyScript.TakeDamage(knifeDamage);
-                }
+                Enemy enemyScript = hit.GetComponent<Enemy>();
+                if (enemyScript != null) enemyScript.TakeDamage(knifeDamage);
 
-                // 2. เล่นเอฟเฟกต์ฟันโดน
                 if (knifeHitFXPrefab != null)
                 {
-                    // ให้ FX เกิดสูงขึ้นมาจากพื้นนิดนึง (จะได้อยู่กลางตัวศัตรู)
-                    Vector3 fxPosition = enemyCollider.transform.position + new Vector3(0, 1f, 0);
-                    Instantiate(knifeHitFXPrefab, fxPosition, Quaternion.identity);
+                    Instantiate(knifeHitFXPrefab, hit.transform.position, Quaternion.identity);
                 }
             }
         }
