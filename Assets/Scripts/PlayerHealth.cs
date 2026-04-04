@@ -11,8 +11,14 @@ public class PlayerHealth : MonoBehaviour
 
     [Header("UI หลอดเลือด")]
     public Image healthBarFill; 
-    public float healthBarLerpSpeed = 10f; // ตัวปรับความสมูธ (ยิ่งเยอะยิ่งไหลเร็ว)
-    private float targetFillAmount = 1f;   // ตัวแปรเก็บเป้าหมายว่าเลือดควรไปหยุดที่ตรงไหน
+    public float healthBarLerpSpeed = 10f; 
+    private float targetFillAmount = 1f;   
+
+    // ---------------------------------------------------------
+    // 🌟 ส่วนที่เพิ่มใหม่: UI หัวใจ
+    // ---------------------------------------------------------
+    [Header("UI หัวใจ (Lives)")]
+    public GameObject[] heartIcons; // อาร์เรย์สำหรับเก็บรูปหัวใจ 3 ดวง
 
     [Header("ระบบฟื้นฟูเลือด (Regen)")]
     public float regenDelay = 5f; 
@@ -43,34 +49,27 @@ public class PlayerHealth : MonoBehaviour
             respawnPoint = defaultSpawn.transform;
         }
 
-        // เซ็ตให้หลอดเลือดและเป้าหมายเต็ม 100% ตอนเริ่มเกมทันที จะได้ไม่เห็นมันวิ่งขึ้นตอนเริ่ม
         targetFillAmount = 1f;
         if (healthBarFill != null) healthBarFill.fillAmount = 1f;
+
+        // อัปเดตหัวใจให้แสดงครบ 3 ดวงตอนเริ่มเกม
+        UpdateLivesUI(); 
     }
 
     void Update()
     {
-        // --------------------------------------------------------
-        // 1. ระบบสมูธ UI (ให้มันทำงานทุกเฟรม ไม่ว่าจะตายหรือเกิดอยู่)
-        // --------------------------------------------------------
         if (healthBarFill != null)
         {
-            // ใช้ Mathf.Lerp เพื่อค่อยๆ ปรับค่า fillAmount ปัจจุบัน ให้ไหลไปหาเป้าหมาย (targetFillAmount)
             healthBarFill.fillAmount = Mathf.Lerp(healthBarFill.fillAmount, targetFillAmount, Time.deltaTime * healthBarLerpSpeed);
         }
 
-        // ถ้าตายหรือเกิดใหม่ ข้ามระบบด้านล่างไปเลย
         if (isRespawning || lives <= 0) return;
 
-        // --------------------------------------------------------
-        // 2. ระบบรีเจนเลือด
-        // --------------------------------------------------------
         if (currentHealth < maxHealth && Time.time >= lastDamageTime + regenDelay)
         {
             currentHealth += regenRate * Time.deltaTime; 
             if (currentHealth > maxHealth) currentHealth = maxHealth; 
             
-            // อัปเดตเป้าหมายของ UI ตอนเลือดกำลังเด้ง
             UpdateHealthUI();
         }
     }
@@ -83,8 +82,6 @@ public class PlayerHealth : MonoBehaviour
         lastDamageTime = Time.time; 
         
         Debug.Log("ผู้เล่นโดนดาเมจ! เลือดเหลือ: " + currentHealth);
-
-        // อัปเดตเป้าหมายของ UI ตอนโดนตี
         UpdateHealthUI();
 
         if (currentHealth <= 0)
@@ -97,15 +94,41 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthBarFill != null)
         {
-            // เปลี่ยนจากการสั่งให้หดทันที เป็นการ "ตั้งเป้าหมาย" แทน
             targetFillAmount = currentHealth / maxHealth;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 🌟 ฟังก์ชันอัปเดตการแสดงผลหัวใจ
+    // ---------------------------------------------------------
+    void UpdateLivesUI()
+    {
+        // เช็คก่อนว่ามีการลากรูปหัวใจมาใส่ใน Inspector หรือยัง
+        if (heartIcons == null || heartIcons.Length == 0) return;
+
+        // วนลูปเช็คหัวใจแต่ละดวง
+        for (int i = 0; i < heartIcons.Length; i++)
+        {
+            // ถ้าลำดับของหัวใจ น้อยกว่า จำนวนชีวิตที่เหลืออยู่ ให้แสดงหัวใจ (เปิด Object)
+            if (i < lives)
+            {
+                heartIcons[i].SetActive(true);
+            }
+            // ถ้าชีวิตลดลงไปแล้ว ให้ซ่อนหัวใจดวงนั้น (ปิด Object)
+            else
+            {
+                heartIcons[i].SetActive(false);
+            }
         }
     }
 
     void Die()
     {
-        lives--; 
+        lives--; // ลดชีวิตลง 1
         Debug.Log("ผู้เล่นตาย! หัวใจเหลือ: " + lives);
+
+        // เรียกใช้อัปเดตหัวใจบนหน้าจอทันทีที่ตาย
+        UpdateLivesUI();
 
         if (lives > 0)
         {
@@ -121,18 +144,22 @@ public class PlayerHealth : MonoBehaviour
     {
         isRespawning = true;
         if (controlPlayer != null) controlPlayer.enabled = false;
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
         transform.position = respawnPoint.position;
         currentHealth = maxHealth; 
         lastDamageTime = Time.time; 
         
-        // เซ็ตให้หลอดเลือดกลับมาเต็ม 100%
         UpdateHealthUI();
 
         if (respawnFXPrefab != null)
         {
             GameObject fx = Instantiate(respawnFXPrefab, transform.position, Quaternion.identity);
-            
             Destroy(fx, 2f); 
         }
 

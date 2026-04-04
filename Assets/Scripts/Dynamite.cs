@@ -7,12 +7,19 @@ public class Dynamite : MonoBehaviour
     public float throwForce = 15f;
     public float throwUpwardForce = 5f;
 
-    [Header("การระเบิด")]
+    [Header("การระเบิด (Damage Falloff)")]
     public float explosionTimer = 3f;
-    public float explosionRadius = 5f;    // รัศมี 5 เมตร
-    public float explosionDamage = 10f;   // ดาเมจสูงสุด (ตรงกลาง)
     
-    [Tooltip("เปอร์เซ็นต์ดาเมจที่ขอบระเบิด (0.2 = 20%)")]
+    [Tooltip("ระยะวงในที่ดาเมจจะโดนเต็ม 100% เสมอ")]
+    public float innerRadius = 2f;    
+    
+    [Tooltip("ระยะวงนอกสุดที่ระเบิดจะไปถึง")]
+    public float outerRadius = 6f;    
+    
+    [Tooltip("ดาเมจสูงสุดเมื่ออยู่ในระยะวงใน")]
+    public float maxDamage = 10f;     
+    
+    [Tooltip("เปอร์เซ็นต์ดาเมจต่ำสุดเมื่ออยู่ขอบวงนอกสุด (0.2 = 20%)")]
     public float minDamagePercent = 0.2f; 
 
     [Header("ระบบแรงกระแทก (Physics)")]
@@ -53,22 +60,38 @@ public class Dynamite : MonoBehaviour
             Instantiate(explosionFXPrefab, transform.position, Quaternion.identity);
         }
 
-        Collider[] colliders = Physics.OverlapSphere(transform.position, explosionRadius);
+        // ตรวจจับรัศมีทั้งหมด โดยใช้วงนอกสุด (outerRadius)
+        Collider[] colliders = Physics.OverlapSphere(transform.position, outerRadius);
+        
         foreach (Collider hit in colliders)
         {
             // ---------------------------------------------------------
-            // ระบบคำนวณดาเมจตามระยะทาง (100% -> 20%)
+            // ระบบคำนวณดาเมจแบบมี Sweet Spot (0-2m = 100%, 2-6m = 100%->20%)
             // ---------------------------------------------------------
             float distance = Vector3.Distance(transform.position, hit.transform.position);
-            
-            // หาว่าเป้าหมายอยู่ห่างออกไปกี่เปอร์เซ็นต์ของรัศมี (0 = ตรงกลาง, 1 = ขอบ 5 เมตร)
-            float distancePercent = Mathf.Clamp01(distance / explosionRadius);
-            
-            // ใช้ Lerp ไล่ระดับตัวคูณดาเมจ จาก 1f (100%) ไปจนถึง 0.2f (20%)
-            float damageMultiplier = Mathf.Lerp(1f, minDamagePercent, distancePercent);
-            
-            // ดาเมจสุทธิที่จะทำใส่เป้าหมาย
-            float actualDamage = explosionDamage * damageMultiplier;
+            float damageMultiplier = 1f;
+
+            // 1. ถ้าอยู่ในวงใน (Sweet Spot) ดาเมจคือ 100%
+            if (distance <= innerRadius)
+            {
+                damageMultiplier = 1f;
+            }
+            // 2. ถ้าหลุดวงในมาแล้ว แต่อยู่ไม่เกินวงนอก
+            else
+            {
+                // หาระยะที่เกินมาจากวงใน
+                float falloffDistance = distance - innerRadius; 
+                // หาระยะทางทั้งหมดของช่วงที่ดาเมจลดลง
+                float maxFalloffRange = outerRadius - innerRadius; 
+                
+                // แปลงเป็นเปอร์เซ็นต์ว่าเดินมาไกลแค่ไหนในโซนลดดาเมจ (0 ถึง 1)
+                float t = Mathf.Clamp01(falloffDistance / maxFalloffRange);
+                
+                // เกลี่ยตัวเลขจาก 100% ไปหา 20%
+                damageMultiplier = Mathf.Lerp(1f, minDamagePercent, t);
+            }
+
+            float actualDamage = maxDamage * damageMultiplier;
 
             // --- ทำดาเมจศัตรู ---
             if (hit.CompareTag("Enemy"))
@@ -90,14 +113,15 @@ public class Dynamite : MonoBehaviour
                 }
             }
 
-            // --- ส่งแรงกระแทกใส่กล่อง (ขอบเขตระเบิดโดนปุ๊บกระเด็นพังเลยเหมือนเดิม) ---
+            // --- ส่งแรงกระแทกใส่กล่อง ---
             if (hit.CompareTag("BreakBox"))
             {
                 Rigidbody boxRB = hit.GetComponent<Rigidbody>();
                 
                 if (boxRB != null)
                 {
-                    boxRB.AddExplosionForce(boxExplosionForce, transform.position, explosionRadius, BoxUpwardForce, ForceMode.Impulse);
+                    // เปลี่ยนเป้าหมายแรงระเบิดให้ใช้วงกว้างสุด (outerRadius)
+                    boxRB.AddExplosionForce(boxExplosionForce, transform.position, outerRadius, BoxUpwardForce, ForceMode.Impulse);
                     Destroy(hit.gameObject, BoxLifeAfterHit); 
                 }
                 else
@@ -110,9 +134,15 @@ public class Dynamite : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // วาดเส้น 2 ชั้นใน Scene เพื่อให้ง่ายต่อการปรับค่า
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, explosionRadius);
+        // วงใน (Sweet Spot) สีแดง
+        Gizmos.color = new Color(1f, 0f, 0f, 0.8f);
+        Gizmos.DrawWireSphere(transform.position, innerRadius);
+
+        // วงนอกสุด (Falloff Limit) สีเหลือง
+        Gizmos.color = new Color(1f, 1f, 0f, 0.5f);
+        Gizmos.DrawWireSphere(transform.position, outerRadius);
     }
 }
