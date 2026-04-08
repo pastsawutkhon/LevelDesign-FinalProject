@@ -62,6 +62,7 @@ public class ControlPlayer : MonoBehaviour
 
     [Header("ระบบโชว์ชื่ออาวุธ")]
     public TMPro.TextMeshProUGUI weaponNameText; 
+
     private Coroutine hideTextCoroutine;
     private Vector3 targetLookPoint;  
 
