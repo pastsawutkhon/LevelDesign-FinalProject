@@ -9,22 +9,27 @@ public class PlayerHealth : MonoBehaviour
     public float currentHealth;
     public int lives = 3; 
 
+    [Header("ระบบ Auto-Regen")]
+    public float regenDelay = 5f;    // 🌟 (หายไป) เวลาที่ต้องรอก่อนรีเลือด
+    public float regenRate = 2f;     // 🌟 (หายไป) อัตราการเพิ่มเลือดต่อวินาที
+    private float lastDamageTime;    // 🌟 (หายไป) เก็บเวลาล่าสุดที่โดนดาเมจ
+
     [Header("เอฟเฟกต์การเกิดใหม่")]
     public GameObject respawnFX;      
     public float fxDestroyTime = 2f;  
-    
-    // 🌟 เปลี่ยนจาก MeshRenderer เป็น GameObject (ตัวโมเดลหลักที่มีลูกๆ อยู่ข้างใน)
     public GameObject playerModelObject; 
     public float respawnDelay = 1.5f; 
 
     [Header("UI และอื่นๆ")]
     public Image healthBarFill; 
+    public float healthBarLerpSpeed = 10f; // 🌟 (หายไป) ความเร็วการลดของเลือด
+    private float targetFillAmount = 1f;   // 🌟 (หายไป) ค่าเป้าหมายของหลอดเลือด
     public GameObject[] heartIcons;
     public GameObject damagePopupPrefab;
 
     private Vector3 initialStartPosition; 
     private ControlPlayer controlPlayer;
-    private Rigidbody rb; // เพิ่ม Rigidbody เพื่อ Reset แรง
+    private Rigidbody rb;
     private bool isInvulnerable = false;
 
     void Awake()
@@ -35,9 +40,23 @@ public class PlayerHealth : MonoBehaviour
     void Start()
     {
         controlPlayer = GetComponent<ControlPlayer>();
-        rb = GetComponent<Rigidbody>(); // อ้างอิง Rigidbody
+        rb = GetComponent<Rigidbody>();
         currentHealth = maxHealth;
         UpdateLivesUI();
+    }
+
+    void Update()
+    {
+        // 🌟 1. ระบบหลอดเลือดนุ่มนวล (หายไป)
+        if (healthBarFill != null)
+            healthBarFill.fillAmount = Mathf.Lerp(healthBarFill.fillAmount, targetFillAmount, Time.deltaTime * healthBarLerpSpeed);
+
+        // 🌟 2. ระบบ Auto-Regen (หายไป)
+        if (currentHealth < maxHealth && Time.time >= lastDamageTime + regenDelay)
+        {
+            currentHealth = Mathf.Min(currentHealth + regenRate * Time.deltaTime, maxHealth);
+            UpdateHealthUI();
+        }
     }
 
     public void TakeDamage(float damageAmount)
@@ -45,6 +64,7 @@ public class PlayerHealth : MonoBehaviour
         if (isInvulnerable || lives <= 0) return;
 
         currentHealth -= damageAmount;
+        lastDamageTime = Time.time; // 🌟 (หายไป) บันทึกเวลาเพื่อเริ่มนับ Delay ใหม่
         UpdateHealthUI();
 
         if (damagePopupPrefab != null)
@@ -77,17 +97,13 @@ public class PlayerHealth : MonoBehaviour
 
         if (controlPlayer != null) controlPlayer.canMove = false;
         
-        // 🌟 แก้บัค 1: หยุดแรงฟิสิกส์ทั้งหมดก่อนย้ายที่
         if (rb != null)
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
 
-        // ย้ายตำแหน่งกลับจุดเริ่ม
         transform.position = initialStartPosition;
-        
-        // 🌟 บังคับให้ระบบ Physics อัปเดตตำแหน่งทันที (แก้ปัญหาไม่วาร์ป)
         Physics.SyncTransforms();
 
         currentHealth = maxHealth;
@@ -99,24 +115,26 @@ public class PlayerHealth : MonoBehaviour
             Destroy(fx, fxDestroyTime); 
         }
 
-        // 🌟 แก้บัค 2: สั่งกระพริบทั้ง GameObject (เพื่อให้ Child ทั้งหมดหายไปด้วย)
         float elapsed = 0;
         while (elapsed < respawnDelay)
         {
             if (playerModelObject != null) 
                 playerModelObject.SetActive(!playerModelObject.activeSelf);
             
-            yield return new WaitForSeconds(0.1f);
-            elapsed += 0.1f;
+            // ใช้ 0.15f เพื่อให้จังหวะกระพริบสวยงามขึ้น
+            yield return new WaitForSecondsRealtime(0.15f); 
+            elapsed += 0.15f;
         }
 
-        // กลับมาสถานะปกติ
         if (playerModelObject != null) playerModelObject.SetActive(true);
         if (controlPlayer != null) controlPlayer.canMove = true;
         isInvulnerable = false;
     }
 
-    void UpdateHealthUI() { if (healthBarFill != null) healthBarFill.fillAmount = currentHealth / maxHealth; }
+    // 🌟 แก้ไข UpdateHealthUI ให้รองรับระบบ Lerp
+    void UpdateHealthUI() { if (healthBarFill != null) targetFillAmount = currentHealth / maxHealth; }
+    
     void UpdateLivesUI() { for (int i = 0; i < heartIcons.Length; i++) if(heartIcons[i] != null) heartIcons[i].SetActive(i < lives); }
+    
     void GameOver() { if (GameFlowManager.instance != null) GameFlowManager.instance.EndGame(false); }
 }

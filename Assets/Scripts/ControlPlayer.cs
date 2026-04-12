@@ -38,10 +38,12 @@ public class ControlPlayer : MonoBehaviour
     [Header("อาวุธ: Rifle (กด 1)")]
     public GameObject rifleBulletPrefab;
     public float rifleCooldown = 0.2f;
+    public AudioSource rifleAudioSource;
 
     [Header("อาวุธ: Pistol (กด 2)")]
     public GameObject pistolBulletPrefab;
     public float pistolCooldown = 0.5f;
+    public AudioSource pistolShotSound;
 
     [Header("อาวุธ: Knife (กด 3)")]
     public float knifeRange = 1.5f;
@@ -49,10 +51,13 @@ public class ControlPlayer : MonoBehaviour
     public float knifeDamage = 3f; 
     public GameObject knifeHitFXPrefab; 
     public Animator knifeAnimator;
+    public AudioSource knifeStab;
+    public AudioSource knifeSwing;
 
     [Header("อาวุธ: Dynamite (กด 4)")]
     public GameObject dynamitePrefab; 
     public float dynamiteCooldown = 1.0f;
+    public AudioSource dynamiteThrowSound;
 
     [Header("การเคลื่อนที่")]
     public float speed = 4f;
@@ -62,6 +67,9 @@ public class ControlPlayer : MonoBehaviour
 
     [Header("ระบบโชว์ชื่ออาวุธ")]
     public TMPro.TextMeshProUGUI weaponNameText; 
+    [Header("Audio Settings")]
+    public AudioSource audioSource; // ลาก AudioSource ของตัวละครมาใส่
+    public AudioClip switchSound;   // เสียงตอนเปลี่ยนอาวุธ (เช่น เสียงขึ้นลำปืน)
 
     public bool canMove = true;
 
@@ -114,6 +122,27 @@ public class ControlPlayer : MonoBehaviour
                     transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed); 
                 }
             }
+        }
+        if (currentWeapon == WeaponType.Rifle)
+        {
+            // ถ้ากดคลิกซ้ายค้าง
+            if (Input.GetMouseButton(0))
+            {
+                if (!rifleAudioSource.isPlaying)
+                {
+                    rifleAudioSource.Play();
+                }
+            }
+            // ถ้าปล่อยเมาส์ หรือ เปลี่ยนอาวุธกะทันหัน
+            else
+            {
+                if (rifleAudioSource.isPlaying) rifleAudioSource.Stop();
+            }
+        }
+        else
+        {
+            // ถ้าเปลี่ยนไปถือปืนอื่น ให้หยุดเสียง Rifle ทันที
+            if (rifleAudioSource.isPlaying) rifleAudioSource.Stop();
         }
     }
 
@@ -203,6 +232,10 @@ public class ControlPlayer : MonoBehaviour
         }
         
         ShowWeaponName(newWeapon);
+        if (audioSource != null && switchSound != null && currentWeapon != WeaponType.None)
+        {
+            audioSource.PlayOneShot(switchSound);
+        }
     }
 
     public void UnlockWeapon(WeaponType weaponToUnlock)
@@ -277,6 +310,10 @@ public class ControlPlayer : MonoBehaviour
                 nextFireTime = Time.time + rifleCooldown;
                 break;
             case WeaponType.Pistol:
+                if (pistolShotSound != null)
+                {
+                    pistolShotSound.Play();
+                }
                 Shoot(pistolBulletPrefab, firePoint2_Pistol);
                 nextFireTime = Time.time + pistolCooldown;
                 break;
@@ -285,6 +322,10 @@ public class ControlPlayer : MonoBehaviour
                 nextFireTime = Time.time + knifeCooldown;
                 break;
             case WeaponType.Dynamite:
+                if (dynamiteThrowSound != null)
+                {
+                    dynamiteThrowSound.Play();
+                }
                 Shoot(dynamitePrefab, firePoint4_Dynamite);
                 nextFireTime = Time.time + dynamiteCooldown;
                 break;
@@ -311,6 +352,7 @@ public class ControlPlayer : MonoBehaviour
     {
         if (attackPoint == null) return;
         Collider[] hitEnemies = Physics.OverlapSphere(attackPoint.position, knifeRange);
+        knifeSwing.Play();
         
         foreach (Collider hit in hitEnemies)
         {
@@ -318,11 +360,12 @@ public class ControlPlayer : MonoBehaviour
             {
                 Enemy enemyScript = hit.GetComponent<Enemy>();
                 if (enemyScript != null) enemyScript.TakeDamage(knifeDamage);
-
+                knifeStab.Play();
                 if (knifeHitFXPrefab != null)
                 {
                     Instantiate(knifeHitFXPrefab, hit.transform.position, Quaternion.identity);
                 }
+
             }
         }
     }

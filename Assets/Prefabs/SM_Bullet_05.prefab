@@ -102,6 +102,7 @@ MonoBehaviour:
   damage: 2
   hitFXPrefab: {fileID: 6263782476919498309, guid: 1fd2749f2a4056446881dce86ed70c39, type: 3}
   rb: {fileID: -4744563524253311331}
+  hitSound: {fileID: 8300000, guid: 7739f971ecec0534c8c697e4480ee92e, type: 3}
 --- !u!1 &7539852237937256843
 GameObject:
   m_ObjectHideFlags: 0

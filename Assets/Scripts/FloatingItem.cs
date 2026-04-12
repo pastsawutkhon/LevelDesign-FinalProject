@@ -13,6 +13,7 @@ public class FloatingItem : MonoBehaviour
 
     [Header("การตั้งค่าปุ่ม (Interaction)")]
     public KeyCode interactKey = KeyCode.E; 
+    public AudioSource pickupSound; // เสียงเก็บไอเทม (ลาก AudioSource มาใส่ตรงนี้)
 
     private Vector3 startPosition;
     private bool isPlayerInRange = false;
@@ -32,6 +33,10 @@ public class FloatingItem : MonoBehaviour
         if (isPlayerInRange && Input.GetKeyDown(interactKey))
         {
             PickUpItem();
+            if (pickupSound != null && pickupSound.clip != null)
+            {
+                AudioSource.PlayClipAtPoint(pickupSound.clip, transform.position);
+            }
         }
     }
 

@@ -11,6 +11,7 @@ public class Bullet : MonoBehaviour
     public GameObject hitFXPrefab; // ลาก Prefab เอฟเฟกต์ตอนยิงโดนมาใส่ (เช่น เลือดกระเด็น, ประกายไฟ)
 
     public Rigidbody rb;
+    public AudioClip hitSound; // เสียงตอนกระสุนโดนเป้าหมาย (ลาก AudioClip มาใส่ตรงนี้)
 
     void Start()
     {
@@ -30,6 +31,10 @@ public class Bullet : MonoBehaviour
             if (hitFXPrefab != null)
             {
                 Instantiate(hitFXPrefab, collision.contacts[0].point, Quaternion.identity);
+            }
+            if (hitSound != null)
+            {
+                AudioSource.PlayClipAtPoint(hitSound, collision.contacts[0].point);
             }
 
             // 2. ทำดาเมจใส่ศัตรู

@@ -16,7 +16,7 @@ public class DamagePopup : MonoBehaviour
         disappearTimer = DISAPPEAR_TIMER_MAX;
         
         // สุ่มตำแหน่งกระจายตัวเล็กน้อย
-        transform.localPosition += new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(-0.3f, 0.3f), 0);
+        transform.localPosition += new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0);
     }
 
     private void Update()

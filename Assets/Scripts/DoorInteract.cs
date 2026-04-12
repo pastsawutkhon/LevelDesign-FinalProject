@@ -11,7 +11,10 @@ public class DoorInteract : MonoBehaviour
     [Header("การตั้งค่าประตู")]
     public KeyCode interactKey = KeyCode.E; 
     public float openAngle = 90f;           
-    public float openSpeed = 5f;            
+    public float openSpeed = 5f;        
+    public AudioSource openSound; // เสียงเปิดประตู (ลาก AudioSource มาใส่ตรงนี้)
+    public AudioSource lockedSound; // เสียงพยายามเปิดประตูที่ล็อกอยู่ (ลาก AudioSource มาใส่ตรงนี้)
+    public AudioSource closeSound; // เสียงปิดประตู (ลาก AudioSource มาใส่ตรงนี้)
 
     private bool isOpen = false;
     private bool isPlayerInRange = false;
@@ -37,11 +40,24 @@ public class DoorInteract : MonoBehaviour
             if (padlock != null)
             {
                 Debug.Log("ประตูถูกล็อก! ต้องทำลายสิ่งกีดขวาง/ตัวล็อกก่อน");
+                if (lockedSound != null)
+                {
+                    lockedSound.Play();
+                }
                 return; // สั่งหยุดการทำงานตรงนี้ ประตูจะไม่เปิดเด็ดขาด
+
             }
 
             // ถ้าหลุดเงื่อนไขด้านบนมาได้ (ไม่ได้ใส่ล็อกแต่แรก หรือล็อกโดนทำลายไปแล้ว)
             isOpen = !isOpen; 
+            if (isOpen)
+            {
+                openSound.Play();
+            }
+            else
+            {
+                closeSound.Play();
+            }
         }
 
         // ระบบหมุนประตู (เปิด/ปิด)

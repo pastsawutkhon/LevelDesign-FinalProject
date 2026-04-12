@@ -33,6 +33,8 @@ public class Dynamite : MonoBehaviour
     [Header("เอฟเฟกต์")]
     public GameObject explosionFXPrefab;
 
+    public AudioSource explosionSound; // เสียงตอนระเบิด (ลาก AudioSource มาใส่ตรงนี้)
+
     private Rigidbody rb;
 
     void Start()
@@ -57,6 +59,10 @@ public class Dynamite : MonoBehaviour
     void Explode()
     {
         Debug.Log("ตู้ม! ไดนาไมต์ระเบิด");
+        if (explosionSound != null)
+        {
+            AudioSource.PlayClipAtPoint(explosionSound.clip, transform.position);
+        }
 
         if (explosionFXPrefab != null)
         {

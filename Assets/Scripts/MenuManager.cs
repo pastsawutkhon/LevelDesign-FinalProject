@@ -21,6 +21,7 @@ public class MenuManager : MonoBehaviour
     public AnimationCurve transitionCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     public ControlPlayer playerScript;
+    public AudioClip ButtonClickSound; // เสียงตอนกดปุ่ม (ลาก AudioSource มาใส่ตรงนี้)
 
     void Awake() => instance = this;
 
@@ -47,6 +48,10 @@ public class MenuManager : MonoBehaviour
 
     public void PressPlay()
     {
+        if(AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(ButtonClickSound);
+        }
         mainMenuUI.SetActive(false);
         // เริ่มการเลื่อนจากจุดปัจจุบันของ transitionCamera ไปยัง playerStartPoint
         StartCoroutine(AnimateCameraTransition());

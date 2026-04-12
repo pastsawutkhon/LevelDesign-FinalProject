@@ -13,6 +13,7 @@ public class GameFlowManager : MonoBehaviour
     [Header("Status Texts")]
     public TextMeshProUGUI statusText;      // สำหรับแสดง "MISSION COMPLETE" หรือ "GAME OVER"
     public TextMeshProUGUI finalScoreText;   // สำหรับแสดงคะแนนรวมสุดท้าย
+    public AudioClip ButtonClickSound; // เสียงตอนกดปุ่ม (ลาก AudioSource มาใส่ตรงนี้)
 
     private bool isPaused = false;
 
@@ -34,6 +35,10 @@ public class GameFlowManager : MonoBehaviour
     // --- ระบบ Pause ---
     public void Pause()
     {
+        if(AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(ButtonClickSound);
+        }
         pauseMenuUI.SetActive(true);
         Time.timeScale = 0f; // หยุดเวลาในเกมทั้งหมด
         isPaused = true;
@@ -43,6 +48,10 @@ public class GameFlowManager : MonoBehaviour
 
     public void Resume()
     {
+        if(AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(ButtonClickSound);
+        }
         pauseMenuUI.SetActive(false);
         Time.timeScale = 1f; // ให้เวลาเดินปกติ
         isPaused = false;
@@ -87,6 +96,10 @@ public class GameFlowManager : MonoBehaviour
     // --- ระบบปุ่มกด ---
     public void ExitToMainMenu()
     {
+            if(AudioManager.instance != null)
+            {
+                AudioManager.instance.PlaySFX(ButtonClickSound);
+            }
         Time.timeScale = 1f;
         // โหลด Scene ลำดับที่ 0 (หรือชื่อ Scene ปัจจุบัน) เพื่อรีเซ็ตกลับไปหน้า Menu
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -94,6 +107,10 @@ public class GameFlowManager : MonoBehaviour
 
     public void ExitGame()
     {
+            if(AudioManager.instance != null)
+            {
+                AudioManager.instance.PlaySFX(ButtonClickSound);
+            }
         Debug.Log("Exiting Game...");
         Application.Quit();
     }
