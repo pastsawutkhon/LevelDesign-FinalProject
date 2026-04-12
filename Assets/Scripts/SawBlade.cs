@@ -8,7 +8,7 @@ public class SawBlade : MonoBehaviour
     private Vector3 startPos;
 
     [Header("การทำดาเมจ (ปรับใหม่ตามคำขอ)")]
-    public float damage = 0.2f;           // ดาเมจครั้งละ 0.2
+    public float damage = 1f;           // ดาเมจครั้งละ 1
     public float damageCooldown = 0.1f;   // โดนถี่ๆ ทุก 0.1 วินาที (1 วินาทีโดน 10 ครั้ง = 2 ดาเมจต่อวินาที)
     
     private float nextDamageTime = 0f;

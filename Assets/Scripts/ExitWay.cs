@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections;
+using UnityEngine.UI; // สำหรับเรียกใช้งาน UI
 
 public class ExitWay : MonoBehaviour
 {
@@ -8,14 +10,19 @@ public class ExitWay : MonoBehaviour
     
     [Header("การเปลี่ยนสีและแสง")]
     public Color successColor = Color.green;
-    [ColorUsage(true, true)] // ทำให้เลือกค่าความสว่างแบบ HDR ได้ใน Inspector
+    [ColorUsage(true, true)] 
     public Color emissionColor = Color.green;
 
     [Header("เอฟเฟกต์")]
     public GameObject successFX;
     public Transform fxPoint;
 
+    [Header("ระบบจบเกม")]
+    public CanvasGroup fadeCanvasGroup; // ลาก FadeImage ที่มี Canvas Group มาใส่
+    public float fadeSpeed = 1f;
+
     private bool isPlayerInRange = false;
+    private bool isActivated = false; // 🌟 สถานะว่าใส่ของไปหรือยัง
     private ControlPlayer playerScript;
     private Renderer objectRenderer;
 
@@ -29,9 +36,10 @@ public class ExitWay : MonoBehaviour
     {
         if (isPlayerInRange && Input.GetKeyDown(interactKey))
         {
-            if (playerScript != null)
+            // ขั้นตอนที่ 1: ถ้ายังไม่ได้ใส่ของ และถือของที่ถูกต้องอยู่
+            if (!isActivated)
             {
-                if (playerScript.currentWeapon == requiredItem)
+                if (playerScript != null && playerScript.currentWeapon == requiredItem)
                 {
                     ActivateExit();
                 }
@@ -40,22 +48,23 @@ public class ExitWay : MonoBehaviour
                     Debug.Log("ต้องถือ " + requiredItem.ToString() + " ไว้ในมือก่อน!");
                 }
             }
+            // ขั้นตอนที่ 2: ถ้าใส่ของไปแล้ว (ทางออกเปิดแล้ว) กดอีกทีเพื่อออก
+            else
+            {
+                StartCoroutine(FinishGameSequence());
+            }
         }
     }
 
     void ActivateExit()
     {
-        Debug.Log("ทางออกเปิดใช้งาน!");
+        isActivated = true; // 🌟 เปลี่ยนสถานะเป็นเปิดใช้งานแล้ว
+        Debug.Log("ทางออกเปิดใช้งาน! กด E อีกครั้งเพื่อหนีออกไป");
 
         if (objectRenderer != null)
         {
-            // 1. เปลี่ยนสีหลัก (Albedo)
             objectRenderer.material.color = successColor;
-
-            // 2. เปิดใช้งานระบบ Emission ใน Material
             objectRenderer.material.EnableKeyword("_EMISSION");
-
-            // 3. เซ็ตสี Emission (ใช้ชื่อ Property มาตรฐานของ Unity)
             objectRenderer.material.SetColor("_EmissionColor", emissionColor);
         }
 
@@ -67,7 +76,17 @@ public class ExitWay : MonoBehaviour
         playerScript.RemoveWeapon(requiredItem);
     }
 
-    // --- ส่วนของ Trigger เหมือนเดิม ---
+    // 🌟 Coroutine สำหรับค่อยๆ จอดำแล้วขึ้น Scoreboard
+    IEnumerator FinishGameSequence()
+    {
+        if (GameFlowManager.instance != null)
+        {
+            GameFlowManager.instance.EndGame(true);
+        }
+        yield return null;
+    }
+
+    // --- ส่วนของ Trigger ---
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))

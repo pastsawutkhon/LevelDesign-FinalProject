@@ -6,35 +6,49 @@ public class TimeManager : MonoBehaviour
     public static TimeManager instance;
 
     public TextMeshProUGUI timerText;
-    public float timeRemaining = 300f; // 5 นาที
-    private bool timerIsRunning = false;
+    public float timeRemaining = 300f; //
+    private bool timerIsRunning = false; //
     
-    [HideInInspector] public int enemyKilled = 0; 
+    [HideInInspector] public int totalEnemyScore = 0; 
 
     void Awake() => instance = this;
 
-    public void StartTimer() => timerIsRunning = true;
+    public void AddEnemyScore(int amount)
+    {
+        totalEnemyScore += amount;
+    }
+
+    public void StartTimer() => timerIsRunning = true; //
 
     void Update()
     {
-        if (timerIsRunning && timeRemaining > 0)
+        if (timerIsRunning && timeRemaining > 0) //
         {
-            timeRemaining -= Time.deltaTime;
-            DisplayTime(timeRemaining);
+            timeRemaining -= Time.deltaTime; //
+            DisplayTime(timeRemaining); //
         }
     }
 
     void DisplayTime(float timeToDisplay)
     {
-        float minutes = Mathf.FloorToInt(timeToDisplay / 60);
-        float seconds = Mathf.FloorToInt(timeToDisplay % 60);
-        timerText.text = string.Format("{0:0}:{1:00}", minutes, seconds);
+        float minutes = Mathf.FloorToInt(timeToDisplay / 60); //
+        float seconds = Mathf.FloorToInt(timeToDisplay % 60); //
+        timerText.text = string.Format("{0:0}:{1:00}", minutes, seconds); //
     }
 
-    public int CalculateFinalScore()
+    // 🌟 สูตรคำนวณคะแนนใหม่ตามที่คุณต้องการ
+    public int CalculateFinalScore(int livesLeft, bool isVictory)
     {
-        // ยิ่งจบเร็ว (เวลาเหลือเยอะ) คะแนนยิ่งสูง
-        int score = (enemyKilled * 100) + Mathf.RoundToInt(timeRemaining * 10);
-        return Mathf.Max(0, score);
+        // ถ้าตายจน Lives เหลือ 0 ให้คะแนนเป็น 0 ทันที
+        if (!isVictory) return 0;
+
+        // สูตร: (คะแนนศัตรูสะสม) + (วินาทีที่เหลือ) + (ชีวิตที่เหลือ * 100)
+        int enemyScore = totalEnemyScore;
+        int timeLeftScore = Mathf.RoundToInt(timeRemaining) * 3;
+        int livesBonus = livesLeft * 100;
+
+        int finalTotal = enemyScore + timeLeftScore + livesBonus;
+
+        return Mathf.Max(0, finalTotal); // ป้องกันคะแนนติดลบ
     }
 }

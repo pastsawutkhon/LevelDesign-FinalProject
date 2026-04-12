@@ -4,6 +4,7 @@ public class Enemy : MonoBehaviour
 {
     [Header("สถานะศัตรู")]
     public float maxHealth = 3f;
+    public int killScore = 100; // คะแนนที่ได้เมื่อฆ่าศัตรูตัวนี้
     private float currentHealth;
 
     [Header("เอฟเฟกต์และของดรอป")]
@@ -46,7 +47,10 @@ public class Enemy : MonoBehaviour
             Instantiate(itemDropPrefab, spawnPos, Quaternion.identity);
         }
 
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.AddEnemyScore(killScore);
+        }
         Destroy(gameObject);
-        TimeManager.instance.enemyKilled++;
     }
 }

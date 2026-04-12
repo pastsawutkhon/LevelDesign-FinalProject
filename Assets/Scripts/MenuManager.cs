@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class MenuManager : MonoBehaviour
 {
@@ -6,11 +7,18 @@ public class MenuManager : MonoBehaviour
 
     [Header("UI Panels")]
     public GameObject mainMenuUI;
-    public GameObject inGameCanvas; // 🌟 ลาก Canvas ที่ใช้ตอนเล่นมาใส่ที่นี่
+    public GameObject inGameCanvas;
 
     [Header("Cameras")]
-    public GameObject menuCamera;  
-    public GameObject playerCamera; 
+    public GameObject transitionCamera; // 🌟 กล้องตัวนี้จะวางแช่ไว้หน้าเมนูและใช้เลื่อนด้วย
+    public GameObject playerCamera;     // 🌟 กล้องจริงที่ล็อกตัวผู้เล่น (มีสคริปต์ Follow)
+
+    [Header("Animation Points")]
+    public Transform playerStartPoint;  // จุดปลายทางที่กล้องควรเลื่อนไปถึง (สร้างไว้เป็นลูกของ Player)
+
+    [Header("Settings")]
+    public float transitionDuration = 2.0f;
+    public AnimationCurve transitionCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     public ControlPlayer playerScript;
 
@@ -24,26 +32,58 @@ public class MenuManager : MonoBehaviour
     public void ShowMainMenu()
     {
         mainMenuUI.SetActive(true);
-        inGameCanvas.SetActive(false); // 🌟 ปิด UI ตอนเล่นขณะอยู่หน้าเมนู
+        inGameCanvas.SetActive(false);
         
-        menuCamera.SetActive(true);
+        // เริ่มเกมมาให้เปิดกล้อง Transition (ที่วางมุมเมนูไว้) และปิดกล้องเล่นจริง
+        transitionCamera.SetActive(true);
         playerCamera.SetActive(false);
         
-        playerScript.canMove = false; 
+        // ผู้เล่นจะยังหันตามเมาส์ได้แต่เดินไม่ได้
+        if (playerScript != null) playerScript.canMove = false; 
         
         Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
+        //Cursor.lockState = CursorLockMode.None;
     }
 
     public void PressPlay()
     {
         mainMenuUI.SetActive(false);
-        inGameCanvas.SetActive(true); // 🌟 เปิด UI ตอนเล่นเมื่อกดเริ่มเกม
-        
-        menuCamera.SetActive(false);
+        // เริ่มการเลื่อนจากจุดปัจจุบันของ transitionCamera ไปยัง playerStartPoint
+        StartCoroutine(AnimateCameraTransition());
+    }
+
+    IEnumerator AnimateCameraTransition()
+    {
+        float elapsed = 0;
+        // เก็บตำแหน่งและหมุนเริ่มต้น (ซึ่งวางไว้ที่มุมเมนู)
+        Vector3 startPos = transitionCamera.transform.position;
+        Quaternion startRot = transitionCamera.transform.rotation;
+
+        while (elapsed < transitionDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / transitionDuration;
+            float curveT = transitionCurve.Evaluate(t);
+
+            // เลื่อนกล้องจากมุมเมนู เข้าหาจุดเริ่มเล่น
+            transitionCamera.transform.position = Vector3.Lerp(startPos, playerStartPoint.position, curveT);
+            transitionCamera.transform.rotation = Quaternion.Slerp(startRot, playerStartPoint.rotation, curveT);
+
+            yield return null;
+        }
+
+        // เมื่อเลื่อนเสร็จ: ปิดกล้องเลื่อน และเปิดกล้องจริงที่ล็อกตัวผู้เล่น
+        transitionCamera.SetActive(false);
         playerCamera.SetActive(true);
+
+        // เข้าสู่โหมดการเล่น
+        inGameCanvas.SetActive(true);
+        if (playerScript != null) playerScript.canMove = true; 
         
-        playerScript.canMove = true;
-        TimeManager.instance.StartTimer();
+        // ใช้โหมด Confined เพื่อให้เมาส์ไม่หายและไม่หลุดขอบ
+        Cursor.visible = true; 
+        //Cursor.lockState = CursorLockMode.Confined;
+        
+        if (TimeManager.instance != null) TimeManager.instance.StartTimer();
     }
 }
