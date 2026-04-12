@@ -60,9 +60,15 @@ public class DoorInteract : MonoBehaviour
             
             // เปลี่ยนข้อความ UI ตามสถานะว่าล็อกอยู่หรือไม่
             if (padlock != null)
+            {
                 Debug.Log("ประตูถูกล็อกอยู่");
+                UIManager.instance.ShowNotification("Door is locked!");
+            }
             else
+            {
                 Debug.Log("กด E เพื่อ " + (isOpen ? "ปิด" : "เปิด") + " ประตู");
+                UIManager.instance.ShowNotification("Press E to " + (isOpen ? "close" : "open") + " door");
+            } 
         }
     }
 

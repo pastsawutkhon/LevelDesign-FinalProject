@@ -3,64 +3,50 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     [Header("สถานะศัตรู")]
-    public float maxHealth = 3f; // เลือดสูงสุด
+    public float maxHealth = 3f;
     private float currentHealth;
 
     [Header("เอฟเฟกต์และของดรอป")]
-    public GameObject deathFXPrefab;   // เอฟเฟกต์ตอนตาย
-    public GameObject itemDropPrefab;  // ไอเทมที่จะดรอป
-    
-    [Tooltip("จุดที่จะให้ไอเทมดรอป (ถ้าปล่อยว่าง จะดรอปที่ตัวศัตรู)")]
-    public Transform dropPoint;        // ลาก GameObject เปล่าๆ มาใส่เพื่อกำหนดจุดดรอป
+    public GameObject deathFXPrefab;
+    public GameObject itemDropPrefab;
+    public Transform dropPoint;
+
+    [Header("Damage Popup")]
+    public GameObject damagePopupPrefab; // ลาก Prefab เลขดาเมจมาใส่ตรงนี้
 
     void Start()
     {
-        // เริ่มเกมมาให้เลือดเต็ม
         currentHealth = maxHealth;
     }
 
     public void TakeDamage(float damageAmount)
     {
         currentHealth -= damageAmount;
-        Debug.Log(gameObject.name + " โดนโจมตี! เลือดเหลือ: " + currentHealth);
         
-        // ถ้าเลือดหมด ให้ตาย
-        if (currentHealth <= 0)
+        // สร้างเลขดาเมจลอยขึ้น
+        if (damagePopupPrefab != null)
         {
-            Die();
+            GameObject popup = Instantiate(damagePopupPrefab, transform.position + Vector3.up * 2f, Quaternion.identity);
+            popup.GetComponent<DamagePopup>().Setup(damageAmount);
         }
+
+        if (currentHealth <= 0) Die();
     }
 
     void Die()
     {
-        // 1. เล่นเอฟเฟกต์ตาย
         if (deathFXPrefab != null)
         {
-            // ให้เอฟเฟกต์เกิดตรงจุดกึ่งกลางของตัวศัตรู (ปรับให้สูงขึ้นมานิดนึง)
-            Vector3 fxPos = transform.position + new Vector3(0, 1f, 0);
-            Instantiate(deathFXPrefab, fxPos, Quaternion.identity);
+            Instantiate(deathFXPrefab, transform.position + Vector3.up, Quaternion.identity);
         }
 
-        // 2. ดรอปไอเทม
         if (itemDropPrefab != null)
         {
-            // ตรวจสอบว่ามีการใส่ Drop Point ไว้หรือไม่
-            Vector3 spawnPosition;
-            if (dropPoint != null)
-            {
-                // ถ้าใส่ไว้ ให้ใช้ตำแหน่งของ Drop Point นั้นเลย
-                spawnPosition = dropPoint.position;
-            }
-            else
-            {
-                // ถ้าไม่ได้ใส่ ให้ใช้ตำแหน่งตัวศัตรู แล้วยกสูงขึ้น 0.5 หน่วยกันจมดิน
-                spawnPosition = transform.position + new Vector3(0, 0.5f, 0);
-            }
-
-            Instantiate(itemDropPrefab, spawnPosition, Quaternion.identity);
+            Vector3 spawnPos = dropPoint != null ? dropPoint.position : transform.position + Vector3.up * 0.5f;
+            Instantiate(itemDropPrefab, spawnPos, Quaternion.identity);
         }
 
-        // 3. ทำลายโมเดลศัตรูทิ้ง
         Destroy(gameObject);
+        TimeManager.instance.enemyKilled++;
     }
 }

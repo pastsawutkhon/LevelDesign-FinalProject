@@ -163,9 +163,13 @@ MonoBehaviour:
   throwForce: 15
   throwUpwardForce: 5
   explosionTimer: 3
-  explosionRadius: 6
-  explosionDamage: 12
+  innerRadius: 2
+  outerRadius: 6
+  maxDamage: 15
   minDamagePercent: 0.2
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 1
   boxExplosionForce: 150
   BoxUpwardForce: 20
   BoxLifeAfterHit: 1

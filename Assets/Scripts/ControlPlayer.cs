@@ -63,6 +63,8 @@ public class ControlPlayer : MonoBehaviour
     [Header("ระบบโชว์ชื่ออาวุธ")]
     public TMPro.TextMeshProUGUI weaponNameText; 
 
+    public bool canMove = true;
+
     private Coroutine hideTextCoroutine;
     private Vector3 targetLookPoint;  
 
@@ -84,27 +86,37 @@ public class ControlPlayer : MonoBehaviour
         HandleWeaponSwitch();
         HandleShooting();
 
-        // 🌟 ย้ายระบบเล็งและการหมุนตัวมารวมกันใน Update ทั้งหมด เพื่อให้ลื่นไหลไปกับเมาส์
-        Plane groundPlane = new Plane(Vector3.up, new Vector3(0, transform.position.y, 0));
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        float rayDistance;
+        // 1. หาว่าขณะนี้กล้องตัวไหนกำลังทำงานอยู่ (ใช้ได้ทั้ง menuCamera และ playerCamera)
+        Camera currentCam = Camera.main;
 
-        if (groundPlane.Raycast(ray, out rayDistance))
+        // 🌟 ถ้า Camera.main เป็น null (เพราะไม่ได้ตั้ง Tag) ให้ลองหากล้องที่กำลังเปิดใช้งานอยู่แทน
+        if (currentCam == null)
         {
-            Vector3 target = ray.GetPoint(rayDistance);
-            target.y = transform.position.y; 
-            Vector3 direction = target - transform.position;
+            currentCam = Camera.current; 
+        }
 
-            if (direction.sqrMagnitude > 0.1f)
+        // 2. ถ้ามีกล้องที่พร้อมทำงาน ให้คำนวณการหมุนตัว
+        if (currentCam != null)
+        {
+            Plane groundPlane = new Plane(Vector3.up, new Vector3(0, transform.position.y, 0));
+            Ray ray = currentCam.ScreenPointToRay(Input.mousePosition); // ใช้ currentCam แทน Camera.main
+            float rayDistance;
+
+            if (groundPlane.Raycast(ray, out rayDistance))
             {
-                Quaternion targetRotation = Quaternion.LookRotation(direction);
-                
-                // ใช้ transform.rotation แทน rb.MoveRotation เพราะเราติ๊ก Freeze Rotation ไปแล้ว
-                // เปลี่ยน Time.fixedDeltaTime เป็น Time.deltaTime ด้วยครับ
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed); 
+                Vector3 target = ray.GetPoint(rayDistance);
+                target.y = transform.position.y; 
+                Vector3 direction = target - transform.position;
+
+                if (direction.sqrMagnitude > 0.1f)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(direction);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed); 
+                }
             }
         }
     }
+
 
     void FixedUpdate()
     {
@@ -121,6 +133,11 @@ public class ControlPlayer : MonoBehaviour
 
     void MovePlayer()
     {
+        if (!canMove) 
+        {
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            return;
+        }
         rb.linearVelocity = new Vector3(movementInput.x, rb.linearVelocity.y, movementInput.z);
     }
 
@@ -185,10 +202,7 @@ public class ControlPlayer : MonoBehaviour
             case WeaponType.None: break;
         }
         
-        if (newWeapon != WeaponType.None)
-        {
-            ShowWeaponName(newWeapon);
-        }
+        ShowWeaponName(newWeapon);
     }
 
     public void UnlockWeapon(WeaponType weaponToUnlock)
@@ -339,34 +353,11 @@ public class ControlPlayer : MonoBehaviour
             case WeaponType.Key_2: nameToShow = "Golden Key 2"; break;
             case WeaponType.Money: nameToShow = "Money"; break;
             case WeaponType.GoldenCoin: nameToShow = "Golden Coin"; break;
-            case WeaponType.None: nameToShow = "Hands"; break;
+            case WeaponType.None: nameToShow = ""; break;
         }
 
         weaponNameText.text = nameToShow;
 
-        // ถ้ามี Coroutine เดิมที่กำลังเฟดอยู่ ให้หยุดก่อน แล้วเริ่มโชว์ใหม่ให้ชัด 100% ทันที
-        if (hideTextCoroutine != null) StopCoroutine(hideTextCoroutine);
-        hideTextCoroutine = StartCoroutine(FadeOutText());
-    }
-
-    // 🌟 ระบบตั้งเวลา: โชว์ค้างไว้ -> ค่อยๆ จางหาย
-    System.Collections.IEnumerator FadeOutText()
-    {
-        // 1. ตั้งค่าให้สีตัวอักษรทึบแสง (Alpha = 1) ทันที
         weaponNameText.color = new Color(weaponNameText.color.r, weaponNameText.color.g, weaponNameText.color.b, 1f);
-        
-        // 2. ค้างโชว์ไว้ 1.5 วินาที
-        yield return new WaitForSeconds(1.5f);
-        
-        // 3. ค่อยๆ เฟดจางหายไปภายใน 0.5 วินาที
-        float fadeTime = 0.5f;
-        float currentFade = 0f;
-        while (currentFade < fadeTime)
-        {
-            currentFade += Time.deltaTime;
-            float alpha = Mathf.Lerp(1f, 0f, currentFade / fadeTime);
-            weaponNameText.color = new Color(weaponNameText.color.r, weaponNameText.color.g, weaponNameText.color.b, alpha);
-            yield return null; // รอเฟรมถัดไป
-        }
     }
 }

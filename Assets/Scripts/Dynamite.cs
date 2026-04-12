@@ -22,6 +22,9 @@ public class Dynamite : MonoBehaviour
     [Tooltip("เปอร์เซ็นต์ดาเมจต่ำสุดเมื่ออยู่ขอบวงนอกสุด (0.2 = 20%)")]
     public float minDamagePercent = 0.2f; 
 
+    [Header("ระบบเช็คกำแพงบัง")]
+    public LayerMask wallLayer; // 🌟 ติ๊กเลือก Layer กำแพงใน Inspector
+
     [Header("ระบบแรงกระแทก (Physics)")]
     public float boxExplosionForce = 20f;  
     public float BoxUpwardForce = 1f;      
@@ -60,34 +63,31 @@ public class Dynamite : MonoBehaviour
             Instantiate(explosionFXPrefab, transform.position, Quaternion.identity);
         }
 
-        // ตรวจจับรัศมีทั้งหมด โดยใช้วงนอกสุด (outerRadius)
         Collider[] colliders = Physics.OverlapSphere(transform.position, outerRadius);
         
         foreach (Collider hit in colliders)
         {
+            // 🌟 1. เช็คกำแพงบังก่อนเลย (ถ้ามีกำแพงกั้น ให้ข้าม Object นี้ไปเลย)
+            if (!HasClearLineOfExplosion(transform.position, hit))
+            {
+                continue; // ข้ามไปเช็คชิ้นถัดไป
+            }
+
             // ---------------------------------------------------------
-            // ระบบคำนวณดาเมจแบบมี Sweet Spot (0-2m = 100%, 2-6m = 100%->20%)
+            // ระบบคำนวณดาเมจแบบมี Sweet Spot (คงเดิม)
             // ---------------------------------------------------------
             float distance = Vector3.Distance(transform.position, hit.transform.position);
             float damageMultiplier = 1f;
 
-            // 1. ถ้าอยู่ในวงใน (Sweet Spot) ดาเมจคือ 100%
             if (distance <= innerRadius)
             {
                 damageMultiplier = 1f;
             }
-            // 2. ถ้าหลุดวงในมาแล้ว แต่อยู่ไม่เกินวงนอก
             else
             {
-                // หาระยะที่เกินมาจากวงใน
                 float falloffDistance = distance - innerRadius; 
-                // หาระยะทางทั้งหมดของช่วงที่ดาเมจลดลง
                 float maxFalloffRange = outerRadius - innerRadius; 
-                
-                // แปลงเป็นเปอร์เซ็นต์ว่าเดินมาไกลแค่ไหนในโซนลดดาเมจ (0 ถึง 1)
                 float t = Mathf.Clamp01(falloffDistance / maxFalloffRange);
-                
-                // เกลี่ยตัวเลขจาก 100% ไปหา 20%
                 damageMultiplier = Mathf.Lerp(1f, minDamagePercent, t);
             }
 
@@ -97,30 +97,22 @@ public class Dynamite : MonoBehaviour
             if (hit.CompareTag("Enemy"))
             {
                 Enemy enemyScript = hit.GetComponent<Enemy>();
-                if (enemyScript != null)
-                {
-                    enemyScript.TakeDamage(actualDamage);
-                }
+                if (enemyScript != null) enemyScript.TakeDamage(actualDamage);
             }
             
             // --- ทำดาเมจผู้เล่น ---
             if (hit.CompareTag("Player"))
             {
                 PlayerHealth playerHealthScript = hit.GetComponent<PlayerHealth>();
-                if (playerHealthScript != null)
-                {
-                    playerHealthScript.TakeDamage(actualDamage);
-                }
+                if (playerHealthScript != null) playerHealthScript.TakeDamage(actualDamage);
             }
 
             // --- ส่งแรงกระแทกใส่กล่อง ---
             if (hit.CompareTag("BreakBox"))
             {
                 Rigidbody boxRB = hit.GetComponent<Rigidbody>();
-                
                 if (boxRB != null)
                 {
-                    // เปลี่ยนเป้าหมายแรงระเบิดให้ใช้วงกว้างสุด (outerRadius)
                     boxRB.AddExplosionForce(boxExplosionForce, transform.position, outerRadius, BoxUpwardForce, ForceMode.Impulse);
                     Destroy(hit.gameObject, BoxLifeAfterHit); 
                 }
@@ -134,14 +126,27 @@ public class Dynamite : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // วาดเส้น 2 ชั้นใน Scene เพื่อให้ง่ายต่อการปรับค่า
+    // 🌟 ฟังก์ชันเช็คว่าแรงระเบิดส่งไปถึงไหม โดยไม่ติดกำแพง
+    bool HasClearLineOfExplosion(Vector3 explosionPos, Collider targetCollider)
+    {
+        // เช็คจากจุดระเบิดไปที่จุดศูนย์กลางของเป้าหมาย
+        Vector3 targetPos = targetCollider.bounds.center;
+        float distance = Vector3.Distance(explosionPos, targetPos);
+        Vector3 direction = (targetPos - explosionPos).normalized;
+
+        if (Physics.Raycast(explosionPos, direction, out RaycastHit hit, distance, wallLayer))
+        {
+            // ถ้าชนอะไรบางอย่างที่อยู่ใน wallLayer ก่อนถึงเป้าหมาย = โดนบัง
+            return false;
+        }
+        return true;
+    }
+
     void OnDrawGizmosSelected()
     {
-        // วงใน (Sweet Spot) สีแดง
         Gizmos.color = new Color(1f, 0f, 0f, 0.8f);
         Gizmos.DrawWireSphere(transform.position, innerRadius);
 
-        // วงนอกสุด (Falloff Limit) สีเหลือง
         Gizmos.color = new Color(1f, 1f, 0f, 0.5f);
         Gizmos.DrawWireSphere(transform.position, outerRadius);
     }

@@ -30,6 +30,7 @@ public class DoorLock : MonoBehaviour
                 if (playerScript.currentWeapon == requiredKey)
                 {
                     Debug.Log("ไขกุญแจสำเร็จ! ลบกุญแจออกและสลับเป็นมือเปล่า");
+                    UIManager.instance.ShowNotification("Door unlocked!");
 
                     // 1. เล่นเอฟเฟกต์ (ถ้ามี)
                     if (unlockFXPrefab != null)
@@ -47,6 +48,7 @@ public class DoorLock : MonoBehaviour
                 {
                     // ถ้าในมือถือปืน หรือถือไอเทมอย่างอื่นอยู่
                     Debug.Log("คุณไม่ได้ถือกุญแจ " + requiredKey.ToString() + " ไว้ในมือ!");
+                    UIManager.instance.ShowNotification("Use " + requiredKey.ToString() + " to unlock!");
                 }
             }
         }

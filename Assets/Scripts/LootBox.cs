@@ -78,6 +78,7 @@ public class LootBox : MonoBehaviour
         {
             isPlayerInRange = true;
             Debug.Log("กด E เพื่อเปิดกล่อง");
+            UIManager.instance.ShowNotification("Press E to open");
         }
     }
 
