@@ -16,20 +16,21 @@ public class ExitWay : MonoBehaviour
     [Header("เอฟเฟกต์")]
     public GameObject successFX;
     public Transform fxPoint;
+    public GameObject door;
 
     [Header("ระบบจบเกม")]
-    public CanvasGroup fadeCanvasGroup; // ลาก FadeImage ที่มี Canvas Group มาใส่
     public float fadeSpeed = 1f;
-
+    public Animator doorAnimator; // ลาก Animator ของประตูมาใส่ตรงนี้
+    public AudioClip completeSound; // เสียงตอนจบเกม (ลาก AudioClip มาใส่ตรงนี้)
     private bool isPlayerInRange = false;
     private bool isActivated = false; // 🌟 สถานะว่าใส่ของไปหรือยัง
     private ControlPlayer playerScript;
     private Renderer objectRenderer;
-
     void Start()
     {
         objectRenderer = GetComponent<Renderer>();
         if (fxPoint == null) fxPoint = transform;
+        doorAnimator.enabled = false; // ปิด Animator ไว้ก่อน เดี๋ยวค่อยเปิดตอนใช้งาน
     }
 
     void Update()
@@ -46,11 +47,13 @@ public class ExitWay : MonoBehaviour
                 else
                 {
                     Debug.Log("ต้องถือ " + requiredItem.ToString() + " ไว้ในมือก่อน!");
+                    UIManager.instance.ShowNotification("Hold the " + requiredItem.ToString() + " in your hand!");
                 }
             }
             // ขั้นตอนที่ 2: ถ้าใส่ของไปแล้ว (ทางออกเปิดแล้ว) กดอีกทีเพื่อออก
             else
             {
+                UIManager.instance.ShowNotification("Press E to Exit!");
                 StartCoroutine(FinishGameSequence());
             }
         }
@@ -59,6 +62,8 @@ public class ExitWay : MonoBehaviour
     void ActivateExit()
     {
         isActivated = true; // 🌟 เปลี่ยนสถานะเป็นเปิดใช้งานแล้ว
+        doorAnimator.enabled = true; // เปิด Animator ให้ประตูเริ่มทำงาน (เปิดประตู)
+        AudioManager.instance.PlaySFX(completeSound); // เล่นเสียงตอนจบเกม
         Debug.Log("ทางออกเปิดใช้งาน! กด E อีกครั้งเพื่อหนีออกไป");
 
         if (objectRenderer != null)
@@ -92,6 +97,7 @@ public class ExitWay : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isPlayerInRange = true;
+            UIManager.instance.ShowNotification("Press E to Interact");
             playerScript = other.GetComponent<ControlPlayer>();
         }
     }

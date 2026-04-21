@@ -17,6 +17,8 @@ public class NPCTrader : MonoBehaviour
     public GameObject tradeFXPrefab; 
     public Transform fxPoint; // 🌟 จุดที่จะให้ Effect แสดง (ถ้าไม่ใส่จะเกิดที่ตัว NPC)
 
+    public AudioClip buttonClickSound; // เสียงตอนกดปุ่ม (ลาก AudioSource มาใส่ตรงนี้)
+
     private bool isPlayerInRange = false;
     private ControlPlayer playerScript;
 
@@ -35,10 +37,18 @@ public class NPCTrader : MonoBehaviour
                 else if (hasMoneyInBag && playerScript.currentWeapon != ControlPlayer.WeaponType.Money)
                 {
                     UIManager.instance.ShowNotification("Hold the money in your hand!");
+                    if(AudioManager.instance != null)
+                    {
+                        AudioManager.instance.PlaySFX(buttonClickSound);
+                    }
                 }
                 else
                 {
                     UIManager.instance.ShowNotification("You don't have any money!");
+                    if(AudioManager.instance != null)
+                    {
+                        AudioManager.instance.PlaySFX(buttonClickSound);
+                    }
                 }
             }
         }
@@ -46,7 +56,6 @@ public class NPCTrader : MonoBehaviour
 
     void TradeItem()
     {
-        Debug.Log("NPC: เริ่มการแลกเปลี่ยน...");
         UIManager.instance.ShowNotification("Trade successful!");
         hasTraded = true;
 

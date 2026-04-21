@@ -27,6 +27,7 @@ public class TacticalRangedEnemy : MonoBehaviour
     private NavMeshAgent agent;
     private EnemyFOV fov;
     private bool isSearchingForSpot = false;
+    public AudioSource shootSound; // เสียงตอนยิง (ลาก AudioSource มาใส่ตรงนี้)
 
     void Start()
     {
@@ -156,6 +157,7 @@ public class TacticalRangedEnemy : MonoBehaviour
         if (bulletPrefab != null && firePoint != null)
         {
             Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+            shootSound.Play(); // เล่นเสียงตอนยิง
         }
     }
 

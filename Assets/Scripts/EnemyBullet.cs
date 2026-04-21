@@ -12,6 +12,7 @@ public class EnemyBullet : MonoBehaviour
 
     private Rigidbody rb;
     private bool isHit = false; // 🌟 ตัวล็อกป้องกันดาเมจซ้ำ
+    public AudioClip hitSound; // เสียงตอนกระสุนโดนเป้าหมาย (ลาก AudioClip มาใส่ตรงนี้)
 
     void Start()
     {
@@ -56,6 +57,7 @@ public class EnemyBullet : MonoBehaviour
         {
             ContactPoint contact = collision.contacts[0];
             Instantiate(hitFXPrefab, contact.point, Quaternion.LookRotation(contact.normal));
+            AudioSource.PlayClipAtPoint(hitSound, transform.position); // เล่นเสียงตอนโดนเป้าหมาย
         }
     }
 }

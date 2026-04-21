@@ -16,6 +16,7 @@ public class MeleeEnemyAttack : MonoBehaviour
     private NavMeshAgent agent;
     private EnemyFOV fov;
     private float nextAttackTime;
+    public AudioSource attackSound; // เสียงตอนโจมตี (ลาก AudioSource มาใส่ตรงนี้)
 
     void Start()
     {
@@ -54,6 +55,7 @@ public class MeleeEnemyAttack : MonoBehaviour
 
         // 3. รอ 0.2 วินาทีตามจังหวะแอนิเมชันก่อนทำดาเมจ
         yield return new WaitForSeconds(damageDelay);
+        attackSound.Play(); // เล่นเสียงตอนโจมตี
 
         // 4. คำนวณดาเมจแบบรูปกรวย (ใช้ค่าจาก FOV)
         CheckMeleeHit();

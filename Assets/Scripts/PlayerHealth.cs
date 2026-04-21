@@ -13,6 +13,7 @@ public class PlayerHealth : MonoBehaviour
     public float regenDelay = 5f;    // 🌟 (หายไป) เวลาที่ต้องรอก่อนรีเลือด
     public float regenRate = 2f;     // 🌟 (หายไป) อัตราการเพิ่มเลือดต่อวินาที
     private float lastDamageTime;    // 🌟 (หายไป) เก็บเวลาล่าสุดที่โดนดาเมจ
+    public GameObject regenEffectObject;
 
     [Header("เอฟเฟกต์การเกิดใหม่")]
     public GameObject respawnFX;      
@@ -26,6 +27,8 @@ public class PlayerHealth : MonoBehaviour
     private float targetFillAmount = 1f;   // 🌟 (หายไป) ค่าเป้าหมายของหลอดเลือด
     public GameObject[] heartIcons;
     public GameObject damagePopupPrefab;
+    public AudioClip damageSound;
+    public AudioSource audioSource;
 
     private Vector3 initialStartPosition; 
     private ControlPlayer controlPlayer;
@@ -47,15 +50,28 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
-        // 🌟 1. ระบบหลอดเลือดนุ่มนวล (หายไป)
+        // 1. ระบบหลอดเลือดนุ่มนวล
         if (healthBarFill != null)
             healthBarFill.fillAmount = Mathf.Lerp(healthBarFill.fillAmount, targetFillAmount, Time.deltaTime * healthBarLerpSpeed);
 
-        // 🌟 2. ระบบ Auto-Regen (หายไป)
-        if (currentHealth < maxHealth && Time.time >= lastDamageTime + regenDelay)
+        // 🌟 2. ระบบ Auto-Regen พร้อมสั่งเปิด/ปิด GameObject
+        // เงื่อนไข: เลือดไม่เต็ม และ พ้นระยะเวลา Delay หลังโดนดาเมจแล้ว
+        bool isRegening = currentHealth < maxHealth && Time.time >= lastDamageTime + regenDelay;
+
+        if (isRegening)
         {
             currentHealth = Mathf.Min(currentHealth + regenRate * Time.deltaTime, maxHealth);
             UpdateHealthUI();
+
+            // เปิดวัตถุเมื่อมีการ Regen
+            if (regenEffectObject != null && !regenEffectObject.activeSelf) 
+                regenEffectObject.SetActive(true);
+        }
+        else
+        {
+            // ปิดวัตถุเมื่อเลือดเต็ม หรือ ยังไม่ถึงเวลา Regen (เพราะเพิ่งโดนดาเมจ)
+            if (regenEffectObject != null && regenEffectObject.activeSelf) 
+                regenEffectObject.SetActive(false);
         }
     }
 
@@ -66,6 +82,7 @@ public class PlayerHealth : MonoBehaviour
         currentHealth -= damageAmount;
         lastDamageTime = Time.time; // 🌟 (หายไป) บันทึกเวลาเพื่อเริ่มนับ Delay ใหม่
         UpdateHealthUI();
+        audioSource.PlayOneShot(damageSound);
 
         if (damagePopupPrefab != null)
         {

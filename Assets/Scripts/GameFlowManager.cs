@@ -15,6 +15,10 @@ public class GameFlowManager : MonoBehaviour
     public TextMeshProUGUI finalScoreText;   // สำหรับแสดงคะแนนรวมสุดท้าย
     public AudioClip ButtonClickSound; // เสียงตอนกดปุ่ม (ลาก AudioSource มาใส่ตรงนี้)
 
+    [Header("End Game Audio")]
+    public AudioClip victorySound;  // เสียงตอนชนะ
+    public AudioClip gameOverSound; // เสียงตอนแพ้
+
     private bool isPaused = false;
 
     void Awake()
@@ -69,7 +73,14 @@ public class GameFlowManager : MonoBehaviour
         Time.timeScale = 0f; 
         
         Cursor.visible = true;
-
+        
+        // เลือกเสียงตามค่า isVictory
+        AudioClip soundToPlay = isVictory ? victorySound : gameOverSound;
+        if (soundToPlay != null)
+        {
+            AudioManager.instance.PlaySFX(soundToPlay);
+        }
+    
         // 🌟 2. ดึงข้อมูลคะแนนแยกส่วน และเช็คเงื่อนไขการแพ้/ชนะ
         // ถ้าแพ้ (isVictory = false) ให้เซ็ตทุกอย่างเป็น 0 ทันที
         int enemyScore = isVictory ? TimeManager.instance.totalEnemyScore : 0; 

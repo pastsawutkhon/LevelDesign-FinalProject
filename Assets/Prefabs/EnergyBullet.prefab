@@ -271,6 +271,7 @@ MonoBehaviour:
   lifeTime: 3
   damage: 6
   hitFXPrefab: {fileID: 2708598583397607911, guid: 6398d43fe79ea0140913dc5530c646af, type: 3}
+  hitSound: {fileID: 8300000, guid: d3d67d00195b29744b7c51d051bfba3d, type: 3}
 --- !u!1001 &5196035847831271536
 PrefabInstance:
   m_ObjectHideFlags: 0

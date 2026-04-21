@@ -29,6 +29,7 @@ public class GameOverAnimation : MonoBehaviour
     public float fadeSpeed = 2f;
     public float countDuration = 0.5f;
     public float buttonDelay = 1f; // ระยะเวลาหน่วงก่อนปุ่มโผล่มา
+    public AudioClip typingSound; // เสียงตอนนับเลข (ลาก AudioClip มาใส่ตรงนี้)
 
     public void StartGameOverSequence(int enemy, int time, int lives, int total)
     {
@@ -101,6 +102,18 @@ public class GameOverAnimation : MonoBehaviour
     // ฟังก์ชันรันตัวเลข
     IEnumerator CountNumber(int start, int end, TextMeshProUGUI textTarget, string prefix)
     {
+        if (end <= 0)
+        {
+            textTarget.text = prefix + "0";
+            yield break; 
+        }
+
+        // 🌟 เริ่มเล่นเสียงเฉพาะกรณีที่เลขมากกว่า 0 เท่านั้น
+        if (AudioManager.instance != null && typingSound != null)
+        {
+            AudioManager.instance.PlaySFX(typingSound);
+        }
+
         float elapsed = 0;
         while (elapsed < countDuration)
         {
@@ -109,6 +122,7 @@ public class GameOverAnimation : MonoBehaviour
             textTarget.text = prefix + current.ToString();
             yield return null;
         }
+
         textTarget.text = prefix + end.ToString();
     }
 }

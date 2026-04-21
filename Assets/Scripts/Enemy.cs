@@ -11,6 +11,7 @@ public class Enemy : MonoBehaviour
     public GameObject deathFXPrefab;
     public GameObject itemDropPrefab;
     public Transform dropPoint;
+    public AudioClip deathSound; // เสียงตอนศัตรูตาย (ลาก AudioClip มาใส่ตรงนี้)
 
     [Header("Damage Popup")]
     public GameObject damagePopupPrefab; // ลาก Prefab เลขดาเมจมาใส่ตรงนี้
@@ -50,6 +51,10 @@ public class Enemy : MonoBehaviour
         if (TimeManager.instance != null)
         {
             TimeManager.instance.AddEnemyScore(killScore);
+        }
+        if (deathSound != null)
+        {
+            AudioSource.PlayClipAtPoint(deathSound, transform.position);
         }
         Destroy(gameObject);
     }
