@@ -42922,7 +42922,7 @@ MonoBehaviour:
   dynamitePrefab: {fileID: 7424548185348507305, guid: ca5d2bde012a6e741be00677ed240838, type: 3}
   dynamiteCooldown: 5
   dynamiteThrowSound: {fileID: 853450028}
-  speed: 4
+  speed: 3
   turnSpeed: 20
   weaponNameText: {fileID: 2022802624}
   audioSource: {fileID: 1271530528}
