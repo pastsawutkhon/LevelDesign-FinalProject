@@ -60,7 +60,7 @@ public class ControlPlayer : MonoBehaviour
     public AudioSource dynamiteThrowSound;
 
     [Header("การเคลื่อนที่")]
-    public float speed = 4f;
+    public float speed = 3f;
 
     [Header("การหมุนตัว")]
     public float turnSpeed = 20f;
@@ -70,6 +70,15 @@ public class ControlPlayer : MonoBehaviour
     [Header("Audio Settings")]
     public AudioSource audioSource; // ลาก AudioSource ของตัวละครมาใส่
     public AudioClip switchSound;   // เสียงตอนเปลี่ยนอาวุธ (เช่น เสียงขึ้นลำปืน)
+
+    [Header("ระบบ Sprint & Stamina")]
+    public float sprintSpeed = 5f;      // ความเร็วตอนวิ่ง
+    public float maxStamina = 100f;     // ค่า Stamina สูงสุด
+    public float currentStamina;        // ค่า Stamina ปัจจุบัน
+    public float staminaDrain = 20f;    // อัตราการลดของ Stamina ต่อวินาที
+    public float staminaRegen = 10f;    // อัตราการฟื้นฟู Stamina ต่อวินาที
+    public UnityEngine.UI.Image staminaBarFill; // ลาก UI Stamina (Image) มาใส่
+    private bool isSprinting = false;
 
     public bool canMove = true;
 
@@ -85,11 +94,13 @@ public class ControlPlayer : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        currentStamina = maxStamina;
         EquipWeapon(WeaponType.None); 
     }
 
     void Update()
     {
+        HandleStamina();
         GetInput();
         HandleWeaponSwitch();
         HandleShooting();
@@ -157,7 +168,14 @@ public class ControlPlayer : MonoBehaviour
     {
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
-        movementInput = new Vector3(moveX, 0, moveZ).normalized * speed;
+        
+        // เช็คว่ากดปุ่ม Shift และมีการขยับตัวอยู่หรือไม่
+        bool isMoving = moveX != 0 || moveZ != 0;
+        isSprinting = Input.GetKey(KeyCode.LeftShift) && isMoving && currentStamina > 0;
+
+        // ปรับความเร็วตามสถานะการวิ่ง
+        float currentSpeed = isSprinting ? sprintSpeed : speed;
+        movementInput = new Vector3(moveX, 0, moveZ).normalized * currentSpeed;
     }
 
     void MovePlayer()
@@ -402,5 +420,25 @@ public class ControlPlayer : MonoBehaviour
         weaponNameText.text = nameToShow;
 
         weaponNameText.color = new Color(weaponNameText.color.r, weaponNameText.color.g, weaponNameText.color.b, 1f);
+    }
+
+    void HandleStamina()
+    {
+        if (isSprinting)
+        {
+            // ลด Stamina เมื่อวิ่ง
+            currentStamina = Mathf.Max(currentStamina - staminaDrain * Time.deltaTime, 0f);
+        }
+        else
+        {
+            // ฟื้นฟู Stamina เมื่อไม่ได้วิ่ง
+            currentStamina = Mathf.Min(currentStamina + staminaRegen * Time.deltaTime, maxStamina);
+        }
+
+        // อัปเดต Stamina Bar (ถ้ามีการลาก UI มาใส่)
+        if (staminaBarFill != null)
+        {
+            staminaBarFill.fillAmount = currentStamina / maxStamina;
+        }
     }
 }

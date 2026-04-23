@@ -6,7 +6,7 @@ public class TimeManager : MonoBehaviour
     public static TimeManager instance;
 
     public TextMeshProUGUI timerText;
-    public float timeRemaining = 300f; //
+    public float timeRemaining = 600f; //
     private bool timerIsRunning = false; //
     
     [HideInInspector] public int totalEnemyScore = 0; 
@@ -26,6 +26,13 @@ public class TimeManager : MonoBehaviour
         {
             timeRemaining -= Time.deltaTime; //
             DisplayTime(timeRemaining); //
+        }
+        else if (timerIsRunning && timeRemaining <= 0) //
+        {
+            timeRemaining = 0; //
+            timerIsRunning = false; //
+            DisplayTime(timeRemaining); //
+            GameOver(); //
         }
     }
 
@@ -51,4 +58,5 @@ public class TimeManager : MonoBehaviour
 
         return Mathf.Max(0, finalTotal); // ป้องกันคะแนนติดลบ
     }
+    void GameOver() { if (GameFlowManager.instance != null) GameFlowManager.instance.EndGame(false); }
 }
